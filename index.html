@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACSF Pro Hub</title>
+    <title>ACSF Pro Hub 2025</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         body { background-color: #050505; color: #ececec; font-family: 'Inter', sans-serif; }
-        .nav-btn { font-size: 11px; font-weight: 900; color: #52525b; border-bottom: 2px solid transparent; padding-bottom: 8px; transition: 0.2s; }
+        .nav-btn { font-size: 11px; font-weight: 900; color: #52525b; border-bottom: 2px solid transparent; padding-bottom: 8px; }
         .nav-btn.active { color: #00ff85; border-color: #00ff85; }
         .card { background: #111113; border: 1px solid #222225; border-radius: 12px; overflow: hidden; }
         .badge { background: #00ff85; color: #050505; padding: 2px 6px; border-radius: 4px; font-weight: 900; font-size: 10px; }
@@ -18,9 +18,7 @@
         td { padding: 12px; border-top: 1px solid #1f1f22; }
         tr.clickable:hover { background: #18181b; cursor: pointer; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 100; padding: 20px; overflow-y: auto; }
-        .search-bar { background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 10px; width: 100%; font-size: 13px; outline: none; }
-        .search-bar:focus { border-color: #00ff85; }
-        .player-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #111113; border: 1px solid #222225; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; }
     </style>
 </head>
 <body class="max-w-2xl mx-auto pb-20 border-x border-zinc-900 shadow-2xl">
@@ -28,9 +26,9 @@
     <header class="sticky top-0 bg-[#050505]/95 backdrop-blur-xl z-50 px-6 pt-8 border-b border-zinc-900">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-black italic tracking-tighter text-[#00ff85]">ACSF</h1>
-            <div class="w-48 md:w-64">
-                <input type="text" id="mainSearch" placeholder="Search Player or Team..." class="search-bar py-1.5" oninput="handleSearch()">
-                <div id="searchResults" class="absolute bg-[#111113] border border-zinc-800 rounded-lg mt-1 w-48 md:w-64 hidden shadow-2xl z-50 overflow-hidden"></div>
+            <div class="relative w-48 md:w-64">
+                <input type="text" id="mainSearch" placeholder="Search Player or Team..." class="w-full bg-[#18181b] border border-zinc-800 rounded-lg px-4 py-2 text-xs outline-none focus:border-[#00ff85]" oninput="handleSearch()">
+                <div id="searchResults" class="search-results hidden shadow-2xl"></div>
             </div>
         </div>
         <nav class="flex space-x-8">
@@ -41,9 +39,20 @@
 
     <main class="px-4 mt-8">
         <div id="section-standings" class="space-y-10">
-            <div><h3 class="text-[10px] font-black text-zinc-500 mb-4 uppercase tracking-widest flex items-center gap-2"><span class="w-2 h-2 bg-blue-500 rounded-full"></span> East Conference</h3><div class="card"><table id="table-eastern"></table></div></div>
-            <div><h3 class="text-[10px] font-black text-zinc-500 mb-4 uppercase tracking-widest flex items-center gap-2"><span class="w-2 h-2 bg-red-500 rounded-full"></span> West Conference</h3><div class="card"><table id="table-western"></table></div></div>
+            <div>
+                <h3 class="text-[10px] font-black text-zinc-500 mb-4 uppercase tracking-widest flex items-center gap-2">
+                    <span class="w-2 h-2 bg-blue-500 rounded-full"></span> Eastern Conference
+                </h3>
+                <div class="card"><table id="table-eastern"></table></div>
+            </div>
+            <div>
+                <h3 class="text-[10px] font-black text-zinc-500 mb-4 uppercase tracking-widest flex items-center gap-2">
+                    <span class="w-2 h-2 bg-red-500 rounded-full"></span> Western Conference
+                </h3>
+                <div class="card"><table id="table-western"></table></div>
+            </div>
         </div>
+
         <div id="section-leaders" class="hidden space-y-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Goals</h3><div id="list-goals" class="card divide-y divide-zinc-800"></div></div>
@@ -56,94 +65,105 @@
 
     <div id="mainModal" class="modal">
         <div class="max-w-md mx-auto">
-            <button onclick="closeModal()" class="mb-6 text-[#00ff85] text-xs font-black uppercase tracking-widest">← Back to Hub</button>
+            <button onclick="closeModal()" class="mb-6 text-[#00ff85] text-xs font-black uppercase tracking-widest">← Return to Hub</button>
             <div id="modalContent"></div>
         </div>
     </div>
 
     <script>
-        const STANDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5yTQVQrEpc3LwF8vCZUu6rVk4vLFt97HjM5WYYQEy85b18G7XaV7m8FoNnd0VVg/pub?output=csv';
-        const MASTER_STATS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?output=csv';
+        // REPLACE THESE WITH YOUR PUBLISHED CSV LINKS
+        const STANDINGS_URL = 'YOUR_STANDINGS_CSV_URL';
+        const TRACKER_URL = 'YOUR_TRACKER_CSV_URL';
+
+        const EASTERN_LIST = ["Inter Miami", "Columbus", "Atlanta", "NY City", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "NY Red Bulls", "Toronto", "Montreal", "DC United"];
+        const WESTERN_LIST = ["Seattle", "San Diego FC", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "Los Angeles", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St. Louis"];
 
         let players = [], standings = [];
 
-        async function update() {
+        async function init() {
             const fetchCsv = (url) => new Promise(res => Papa.parse(url, { download: true, header: true, complete: d => res(d.data) }));
             standings = await fetchCsv(STANDINGS_URL);
-            players = await fetchCsv(MASTER_STATS_URL);
+            players = await fetchCsv(TRACKER_URL);
             render();
         }
 
         function render() {
-            const eastTeams = standings.filter(r => r.Team && r.PTS).slice(0, 15);
-            const westTeams = standings.filter(r => r.Team && r.PTS).slice(15, 30);
-            const tableHtml = (data) => `<thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead><tbody>${data.sort((a,b) => b.PTS - a.PTS || b.GD - a.GD).map((r, i) => `<tr class="clickable" onclick="openTeam('${r.Team}')"><td class="text-zinc-600 font-bold">${i+1}</td><td class="font-bold">${r.Team}</td><td>${r.GD}</td><td class="font-black text-[#00ff85]">${r.PTS}</td></tr>`).join('')}</tbody>`;
-            document.getElementById('table-eastern').innerHTML = tableHtml(eastTeams);
-            document.getElementById('table-western').innerHTML = tableHtml(westTeams);
-            const drawList = (id, key) => {
-                const top = players.filter(p => p[key] && p[key] > 0).sort((a,b) => b[key] - a[key]).slice(0, 5);
-                document.getElementById(id).innerHTML = top.map(p => `<div class="p-3 flex justify-between items-center text-xs"><div><div class="font-bold">${p['Player Name']}</div><div class="text-[9px] text-zinc-600 uppercase font-black">${p.Team}</div></div><span class="badge">${p[key]}</span></div>`).join('');
+            const renderTable = (id, list) => {
+                const data = standings.filter(s => list.includes(s.Team)).sort((a,b) => b.PTS - a.PTS || b.GD - a.GD);
+                document.getElementById(id).innerHTML = `
+                    <thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead>
+                    <tbody>${data.map((r, i) => `<tr class="clickable" onclick="openTeam('${r.Team}')">
+                        <td class="text-zinc-600 font-bold">${i+1}</td>
+                        <td class="font-bold">${r.Team}</td>
+                        <td>${r.GD}</td><td class="font-black text-[#00ff85]">${r.PTS}</td>
+                    </tr>`).join('')}</tbody>`;
             };
-            drawList('list-goals', 'Goals'); drawList('list-assists', 'Assists'); drawList('list-ratings', 'MatchRatings'); drawList('list-cleans', 'CleanSheets');
+            renderTable('table-eastern', EASTERN_LIST);
+            renderTable('table-western', WESTERN_LIST);
+
+            const drawLeaders = (id, key) => {
+                const top = players.filter(p => p[key] > 0).sort((a,b) => b[key] - a[key]).slice(0, 5);
+                document.getElementById(id).innerHTML = top.length ? top.map(p => `
+                    <div class="p-3 flex justify-between items-center text-xs">
+                        <div><div class="font-bold">${p['Player Name']}</div><div class="text-[9px] text-zinc-600 uppercase font-black">${p.Team}</div></div>
+                        <span class="badge">${p[key]}</span>
+                    </div>`).join('') : '<div class="p-3 text-[10px] text-zinc-600">No data found</div>';
+            };
+            drawLeaders('list-goals', 'Goals');
+            drawLeaders('list-assists', 'Assists');
+            drawLeaders('list-ratings', 'MatchRatings');
+            drawLeaders('list-cleans', 'CleanSheets');
         }
 
         function handleSearch() {
             const q = document.getElementById('mainSearch').value.toLowerCase();
-            const resultsDiv = document.getElementById('searchResults');
-            if (q.length < 2) { resultsDiv.classList.add('hidden'); return; }
-            
-            const filteredPlayers = players.filter(p => p['Player Name'].toLowerCase().includes(q)).slice(0, 4);
-            const filteredTeams = standings.filter(s => s.Team && s.Team.toLowerCase().includes(q)).slice(0, 2);
+            const results = document.getElementById('searchResults');
+            if (q.length < 2) { results.classList.add('hidden'); return; }
 
-            if (filteredPlayers.length || filteredTeams.length) {
-                resultsDiv.classList.remove('hidden');
-                resultsDiv.innerHTML = `
-                    ${filteredTeams.map(t => `<div onclick="openTeam('${t.Team}')" class="p-3 border-b border-zinc-800 cursor-pointer hover:bg-zinc-800 text-[10px] font-black uppercase text-[#00ff85]">Team: ${t.Team}</div>`).join('')}
-                    ${filteredPlayers.map(p => `<div onclick="openPlayer('${p['Player Name']}')" class="p-3 border-b border-zinc-800 cursor-pointer hover:bg-zinc-800 text-[11px] font-bold">Player: ${p['Player Name']}</div>`).join('')}
+            const pMatch = players.filter(p => p['Player Name'].toLowerCase().includes(q)).slice(0, 5);
+            const tMatch = standings.filter(s => s.Team && s.Team.toLowerCase().includes(q)).slice(0, 3);
+
+            if (pMatch.length || tMatch.length) {
+                results.classList.remove('hidden');
+                results.innerHTML = `
+                    ${tMatch.map(t => `<div onclick="openTeam('${t.Team}')" class="p-3 hover:bg-zinc-800 cursor-pointer border-b border-zinc-900 text-[10px] font-black text-[#00ff85] uppercase">Team: ${t.Team}</div>`).join('')}
+                    ${pMatch.map(p => `<div onclick="openPlayer('${p['Player Name']}')" class="p-3 hover:bg-zinc-800 cursor-pointer border-b border-zinc-900 text-xs font-bold">${p['Player Name']} (${p.Team})</div>`).join('')}
                 `;
-            } else { resultsDiv.classList.add('hidden'); }
+            } else { results.classList.add('hidden'); }
         }
 
-        function openPlayer(playerName) {
-            const p = players.find(x => x['Player Name'] === playerName);
-            const isGoalie = (p.CleanSheets && p.CleanSheets > 0) || (p.Position && p.Position.toLowerCase().includes('gk'));
-            
+        function openPlayer(name) {
+            const p = players.find(x => x['Player Name'] === name);
+            const isGK = p.CleanSheets > 0;
             document.getElementById('mainModal').style.display = 'block';
             document.getElementById('searchResults').classList.add('hidden');
-            document.getElementById('mainSearch').value = '';
-
             document.getElementById('modalContent').innerHTML = `
                 <div class="text-center mb-8">
-                    <div class="w-20 h-20 bg-zinc-800 rounded-full mx-auto mb-4 border-2 border-[#00ff85] flex items-center justify-center text-2xl font-black">${p['Player Name'].charAt(0)}</div>
                     <h2 class="text-3xl font-black italic text-white">${p['Player Name']}</h2>
-                    <p class="text-xs font-black text-[#00ff85] uppercase tracking-widest">${p.Team}</p>
+                    <p class="text-[#00ff85] font-black uppercase text-xs tracking-widest">${p.Team}</p>
                 </div>
-                <div class="card p-6">
-                    <h3 class="text-[10px] font-black text-zinc-500 uppercase mb-4 tracking-widest">Season Performance</h3>
-                    <div class="player-stat-grid">
-                        <div class="text-center"><div class="text-zinc-500 text-[9px] uppercase">Rating</div><div class="text-xl font-black text-[#00ff85]">${p.MatchRatings || '-'}</div></div>
-                        <div class="text-center"><div class="text-zinc-500 text-[9px] uppercase">GP</div><div class="text-xl font-black">${p.Played || '-'}</div></div>
-                        ${isGoalie ? `
-                            <div class="text-center"><div class="text-zinc-500 text-[9px] uppercase">Cleans</div><div class="text-xl font-black text-blue-400">${p.CleanSheets || 0}</div></div>
-                        ` : `
-                            <div class="text-center"><div class="text-zinc-500 text-[9px] uppercase">Goals</div><div class="text-xl font-black">${p.Goals || 0}</div></div>
-                            <div class="text-center mt-4"><div class="text-zinc-500 text-[9px] uppercase">Assists</div><div class="text-xl font-black">${p.Assists || 0}</div></div>
-                        `}
-                    </div>
-                </div>
-            `;
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="card p-4 text-center"><div class="text-[9px] text-zinc-500 uppercase">Rating</div><div class="text-2xl font-black text-[#00ff85]">${p.MatchRatings || '-'}</div></div>
+                    <div class="card p-4 text-center"><div class="text-[9px] text-zinc-500 uppercase">GP</div><div class="text-2xl font-black">${p.Played || '-'}</div></div>
+                    ${isGK ? `
+                        <div class="card p-4 text-center col-span-2"><div class="text-[9px] text-zinc-500 uppercase">Clean Sheets</div><div class="text-2xl font-black text-blue-400">${p.CleanSheets}</div></div>
+                    ` : `
+                        <div class="card p-4 text-center"><div class="text-[9px] text-zinc-500 uppercase">Goals</div><div class="text-2xl font-black">${p.Goals}</div></div>
+                        <div class="card p-4 text-center"><div class="text-[9px] text-zinc-500 uppercase">Assists</div><div class="text-2xl font-black">${p.Assists || 0}</div></div>
+                    `}
+                </div>`;
         }
 
         function openTeam(name) {
-            const roster = players.filter(p => p.Team && p.Team.toLowerCase().includes(name.toLowerCase().split(' ')[0]));
+            const roster = players.filter(p => p.Team.includes(name.split(' ')[0]));
             document.getElementById('mainModal').style.display = 'block';
             document.getElementById('searchResults').classList.add('hidden');
             document.getElementById('modalContent').innerHTML = `
-                <h1 class="text-4xl font-black italic text-[#00ff85] mb-4">${name}</h1>
+                <h1 class="text-4xl font-black italic text-[#00ff85] mb-6">${name}</h1>
                 <div class="card divide-y divide-zinc-800">
                     <div class="p-3 grid grid-cols-4 text-[9px] font-black text-zinc-600 uppercase"><div>Player</div><div>G</div><div>A</div><div>RTG</div></div>
-                    ${roster.map(p => `<div onclick="openPlayer('${p['Player Name']}')" class="p-4 grid grid-cols-4 items-center text-xs cursor-pointer hover:bg-zinc-800">
-                        <div class="font-bold truncate">${p['Player Name']}</div><div>${p.Goals || 0}</div><div>${p.Assists || 0}</div><div class="text-[#00ff85] font-black">${p.MatchRatings || '-'}</div>
+                    ${roster.map(p => `<div onclick="openPlayer('${p['Player Name']}')" class="p-4 grid grid-cols-4 items-center text-xs hover:bg-zinc-800 cursor-pointer">
+                        <div class="font-bold truncate">${p['Player Name']}</div><div>${p.Goals}</div><div>${p.Assists || 0}</div><div class="text-[#00ff85] font-black">${p.MatchRatings || '-'}</div>
                     </div>`).join('')}
                 </div>`;
         }
@@ -156,7 +176,7 @@
         }
 
         function closeModal() { document.getElementById('mainModal').style.display = 'none'; }
-        update();
+        init();
     </script>
 </body>
 </html>
