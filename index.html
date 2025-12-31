@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACSF League Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #050505; color: #ececec; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        .nav-active { color: #00ff85; border-bottom: 2px solid #00ff85; }
+        .card { background: #111113; border: 1px solid #1f1f22; border-radius: 12px; }
+        .stat-val { color: #00ff85; font-weight: 800; }
+        .player-avatar { width: 32px; height: 32px; border-radius: 50%; background: #1f1f22; border: 1px solid #333; }
+        tr:nth-child(even) { background-color: #0a0a0c; }
+    </style>
+</head>
+<body class="max-w-md mx-auto min-h-screen pb-20 border-x border-zinc-900 shadow-2xl">
+
+    <header class="sticky top-0 z-50 bg-[#050505]/95 backdrop-blur-md border-b border-zinc-900 pt-8 px-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-black italic tracking-tighter text-[#00ff85]">ACSF</h1>
+            <div class="text-[10px] font-bold text-zinc-500 bg-zinc-900 px-2 py-1 rounded tracking-widest uppercase">Live Sync</div>
+        </div>
+        <nav class="flex justify-around text-center">
+            <button onclick="tab('standings')" id="btn-standings" class="nav-active pb-3 text-[11px] font-black uppercase tracking-widest">Standings</button>
+            <button onclick="tab('leaders')" id="btn-leaders" class="pb-3 text-[11px] font-black uppercase tracking-widest text-zinc-500">Leaders</button>
+        </nav>
+    </header>
+
+    <main class="mt-6 px-4">
+        <section id="section-standings" class="card overflow-hidden">
+            <table class="w-full text-left text-[11px]">
+                <thead class="bg-zinc-900/50 text-zinc-500 font-bold uppercase tracking-wider">
+                    <tr>
+                        <th class="p-4 w-8">#</th>
+                        <th class="py-4">Team</th>
+                        <th class="p-4 text-center">GP</th>
+                        <th class="p-4 text-center">PTS</th>
+                    </tr>
+                </thead>
+                <tbody id="table-data"></tbody>
+            </table>
+        </section>
+
+        <section id="section-leaders" class="hidden space-y-4">
+            <h2 class="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-4">Top Goalscorers</h2>
+            <div id="scorer-list" class="card divide-y divide-zinc-800"></div>
+        </section>
+    </main>
+
+    <script>
+        // Exact links for your ACSF League
+        const STATS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?output=csv';
+        const TABLE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5yTQVQrEpc3LwF8vCZUu6rVk4vLFt97HjM5WYYQEy85b18G7XaV7m8FoNnd0VVg/pub?output=csv';
+
+        function tab(name) {
+            document.getElementById('section-standings').classList.toggle('hidden', name !== 'standings');
+            document.getElementById('section-leaders').classList.toggle('hidden', name !== 'leaders');
+            document.getElementById('btn-standings').className = name === 'standings' ? 'nav-active pb-3 text-[11px] font-black uppercase tracking-widest' : 'pb-3 text-[11px] font-black uppercase tracking-widest text-zinc-500';
+            document.getElementById('btn-leaders').className = name === 'leaders' ? 'nav-active pb-3 text-[11px] font-black uppercase tracking-widest' : 'pb-3 text-[11px] font-black uppercase tracking-widest text-zinc-500';
+        }
+
+        async function update() {
+            // Load Standings (mapping to GP, Team, PTS, and #)
+            Papa.parse(TABLE_URL, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    const body = document.getElementById('table-data');
+                    body.innerHTML = results.data.filter(r => r.Team).map(r => `
+                        <tr class="border-b border-zinc-900/50">
+                            <td class="p-4 font-bold text-zinc-600">${r['#'] || '-'}</td>
+                            <td class="py-4 font-black text-xs uppercase tracking-tight">${r.Team}</td>
+                            <td class="p-4 text-center text-zinc-400 font-medium italic">${r.GP || 0}</td>
+                            <td class="p-4 text-center font-black text-[#00ff85] bg-zinc-900/20">${r.PTS || 0}</td>
+                        </tr>
+                    `).join('');
+                }
+            });
+
+            // Load Leaders (mapping to Player Name, Goals, Team)
+            Papa.parse(STATS_URL, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    const list = document.getElementById('scorer-list');
+                    // Sorting by Goals descending
+                    const sorted = results.data.filter(r => r['Player Name']).sort((a,b) => b.Goals - a.Goals).slice(0, 15);
+                    list.innerHTML = sorted.map((p, i) => `
+                        <div class="p-4 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="text-[10px] font-bold text-zinc-700 w-3">${i+1}</span>
+                                <img src="https://api.dicebear.com/7.x/initials/svg?seed=${p['Player Name']}&backgroundColor=111113" class="player-avatar">
+                                <div>
+                                    <div class="text-xs font-bold">${p['Player Name']}</div>
+                                    <div class="text-[9px] text-zinc-500 font-black uppercase tracking-tighter">${p.Team}</div>
+                                </div>
+                            </div>
+                            <span class="stat-val text-sm">${p.Goals}</span>
+                        </div>
+                    `).join('');
+                }
+            });
+        }
+
+        update();
+        setInterval(update, 60000); // Refresh every minute
+    </script>
+</body>
+</html>
