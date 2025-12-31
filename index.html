@@ -19,19 +19,18 @@
         tr.clickable:hover { background: #18181b; cursor: pointer; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 100; padding: 20px; overflow-y: auto; }
         .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #111113; border: 1px solid #222225; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; }
-        
-        /* Custom scrollbar for search */
-        .search-results::-webkit-scrollbar { width: 4px; }
-        .search-results::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .loading-overlay { position: fixed; inset: 0; background: #050505; display: flex; align-items: center; justify-content: center; z-index: 200; font-weight: 900; color: #00ff85; }
     </style>
 </head>
 <body class="max-w-2xl mx-auto pb-20 border-x border-zinc-900 shadow-2xl">
+
+    <div id="loading" class="loading-overlay">LOADING ACSF DATA...</div>
 
     <header class="sticky top-0 bg-[#050505]/95 backdrop-blur-xl z-50 px-6 pt-8 border-b border-zinc-900">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-black italic tracking-tighter text-[#00ff85]">ACSF</h1>
             <div class="relative w-48 md:w-64">
-                <input type="text" id="mainSearch" placeholder="Search Player..." class="w-full bg-[#18181b] border border-zinc-800 rounded-lg px-4 py-2 text-xs outline-none focus:border-[#00ff85]" oninput="handleSearch()">
+                <input type="text" id="mainSearch" placeholder="Search Player or Team..." class="w-full bg-[#18181b] border border-zinc-800 rounded-lg px-4 py-2 text-xs outline-none focus:border-[#00ff85]" oninput="handleSearch()">
                 <div id="searchResults" class="search-results hidden shadow-2xl"></div>
             </div>
         </div>
@@ -69,151 +68,140 @@
 
     <div id="mainModal" class="modal">
         <div class="max-w-md mx-auto">
-            <button onclick="closeModal()" class="mb-6 text-[#00ff85] text-xs font-black uppercase tracking-widest">← Close</button>
+            <button onclick="closeModal()" class="mb-6 text-[#00ff85] text-xs font-black uppercase tracking-widest">← Back</button>
             <div id="modalContent"></div>
         </div>
     </div>
 
     <script>
-        // REPLACE WITH YOUR LINKS
-        const STANDINGS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5yTQVQrEpc3LwF8vCZUu6rVk4vLFt97HjM5WYYQEy85b18G7XaV7m8FoNnd0VVg/pub?output=csv';
-        const PLAYER_STATS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?output=csv';
+        const URLS = {
+            goals: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=0&single=true&output=csv',
+            assists: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=1828601090&single=true&output=csv',
+            cleans: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=1875623411&single=true&output=csv',
+            ratings: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=692292778&single=true&output=csv',
+            standings: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=983480432&single=true&output=csv'
+        };
 
-        // FIXED CONFERENCE LISTS
-        const EASTERN_TEAMS = ["Inter Miami", "Columbus", "Atlanta", "NY City", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "NY Red Bulls", "Toronto", "Montreal", "DC United"];
-        const WESTERN_TEAMS = ["Seattle", "San Diego FC", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "Los Angeles", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St. Louis"];
+        const EAST_TEAMS = ["Inter Miami", "Columbus", "Atlanta", "NY City", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "NY Red Bulls", "Toronto", "Montreal", "DC United"];
+        const WEST_TEAMS = ["Seattle", "San Diego FC", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "Los Angeles", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St. Louis"];
 
-        let players = [], standings = [];
+        let players = {}, standings = [];
 
         async function init() {
-            try {
-                const fetchCsv = (url) => new Promise((resolve) => {
-                    Papa.parse(url, { download: true, header: true, complete: (results) => resolve(results.data) });
-                });
+            const fetchCsv = (url) => new Promise(res => Papa.parse(url, { download: true, header: true, complete: d => res(d.data) }));
+            
+            const [gData, aData, cData, rData, sData] = await Promise.all([
+                fetchCsv(URLS.goals), fetchCsv(URLS.assists), fetchCsv(URLS.cleans), fetchCsv(URLS.ratings), fetchCsv(URLS.standings)
+            ]);
 
-                standings = await fetchCsv(STANDINGS_URL);
-                players = await fetchCsv(PLAYER_STATS_URL);
-                render();
-            } catch (e) { console.error("Data Load Error", e); }
+            standings = sData;
+
+            // Merging logic
+            const process = (data, key) => {
+                data.forEach(row => {
+                    const name = row['Player Name'];
+                    if(!name) return;
+                    if(!players[name]) players[name] = { name, team: row.Team, goals: 0, assists: 0, cleans: 0, rating: 0, played: 0 };
+                    
+                    if(key === 'goals') players[name].goals = parseInt(row.Goals) || 0;
+                    if(key === 'assists') players[name].assists = parseInt(row.Assists) || 0;
+                    if(key === 'cleans') players[name].cleans = parseInt(row['Clean Sheets']) || 0;
+                    if(key === 'ratings') {
+                        players[name].rating = parseFloat(row['Average Rating']) || 0;
+                        players[name].played = row['Matches Played'] || 0;
+                    }
+                });
+            };
+
+            process(gData, 'goals');
+            process(aData, 'assists');
+            process(cData, 'cleans');
+            process(rData, 'ratings');
+
+            document.getElementById('loading').style.display = 'none';
+            render();
         }
 
         function render() {
-            // Render Standings
-            const renderConference = (id, list) => {
-                const data = standings
-                    .filter(s => list.some(name => s.Team && s.Team.toLowerCase().includes(name.toLowerCase())))
-                    .sort((a, b) => parseInt(b.PTS) - parseInt(a.PTS) || parseInt(b.GD) - parseInt(a.GD));
-                
+            const renderTbl = (id, list) => {
+                const data = standings.filter(s => list.some(n => s.Team && s.Team.includes(n))).sort((a,b) => b.PTS - a.PTS);
                 document.getElementById(id).innerHTML = `
                     <thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead>
                     <tbody>${data.map((r, i) => `<tr class="clickable" onclick="openTeam('${r.Team}')">
-                        <td class="text-zinc-600 font-bold">${i+1}</td>
-                        <td class="font-bold">${r.Team}</td>
-                        <td>${r.GD}</td><td class="font-black text-[#00ff85]">${r.PTS}</td>
+                        <td class="text-zinc-600 font-bold">${i+1}</td><td class="font-bold">${r.Team}</td><td>${r.GD}</td><td class="font-black text-[#00ff85]">${r.PTS}</td>
                     </tr>`).join('')}</tbody>`;
             };
-            renderConference('table-eastern', EASTERN_TEAMS);
-            renderConference('table-western', WESTERN_TEAMS);
+            renderTbl('table-eastern', EAST_TEAMS);
+            renderTbl('table-western', WEST_TEAMS);
 
-            // Render Leaders
             const drawLeaders = (id, key) => {
-                const top = players
-                    .filter(p => p[key] && !isNaN(parseFloat(p[key])) && parseFloat(p[key]) > 0)
-                    .sort((a, b) => parseFloat(b[key]) - parseFloat(a[key]))
-                    .slice(0, 5);
-
-                document.getElementById(id).innerHTML = top.length ? top.map(p => `
-                    <div class="p-3 flex justify-between items-center text-xs clickable" onclick="openPlayer('${p['Player Name']}')">
-                        <div><div class="font-bold">${p['Player Name']}</div><div class="text-[9px] text-zinc-600 uppercase font-black">${p.Team}</div></div>
+                const list = Object.values(players).sort((a,b) => b[key] - a[key]).slice(0, 5);
+                document.getElementById(id).innerHTML = list.map(p => `
+                    <div class="p-3 flex justify-between items-center text-xs clickable" onclick="openPlayer('${p.name}')">
+                        <div><div class="font-bold">${p.name}</div><div class="text-[9px] text-zinc-600 uppercase font-black">${p.team}</div></div>
                         <span class="badge">${p[key]}</span>
-                    </div>`).join('') : '<div class="p-4 text-zinc-600 text-[10px]">No Data Found</div>';
+                    </div>`).join('');
             };
-            drawLeaders('list-goals', 'Goals');
-            drawLeaders('list-assists', 'Assists');
-            drawLeaders('list-ratings', 'MatchRatings');
-            drawLeaders('list-cleans', 'CleanSheets');
+            drawLeaders('list-goals', 'goals');
+            drawLeaders('list-assists', 'assists');
+            drawLeaders('list-ratings', 'rating');
+            drawLeaders('list-cleans', 'cleans');
         }
 
         function handleSearch() {
-            const query = document.getElementById('mainSearch').value.toLowerCase();
-            const resultsDiv = document.getElementById('searchResults');
-            
-            if (query.length < 2) { resultsDiv.classList.add('hidden'); return; }
+            const q = document.getElementById('mainSearch').value.toLowerCase();
+            const res = document.getElementById('searchResults');
+            if (q.length < 2) { res.classList.add('hidden'); return; }
 
-            const pMatch = players.filter(p => p['Player Name'] && p['Player Name'].toLowerCase().includes(query)).slice(0, 6);
-            const tMatch = standings.filter(s => s.Team && s.Team.toLowerCase().includes(query)).slice(0, 3);
+            const pMatch = Object.values(players).filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
+            const tMatch = standings.filter(s => s.Team && s.Team.toLowerCase().includes(q)).slice(0, 3);
 
-            if (pMatch.length || tMatch.length) {
-                resultsDiv.classList.remove('hidden');
-                resultsDiv.innerHTML = `
-                    ${tMatch.map(t => `<div onclick="openTeam('${t.Team}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-[10px] font-black text-[#00ff85] uppercase border-b border-zinc-900">Team: ${t.Team}</div>`).join('')}
-                    ${pMatch.map(p => `<div onclick="openPlayer('${p['Player Name']}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-xs font-bold border-b border-zinc-900">${p['Player Name']} <span class="text-[9px] text-zinc-500 font-normal ml-1">(${p.Team})</span></div>`).join('')}
-                `;
-            } else { resultsDiv.classList.add('hidden'); }
+            res.classList.remove('hidden');
+            res.innerHTML = `
+                ${tMatch.map(t => `<div onclick="openTeam('${t.Team}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-[10px] font-black text-[#00ff85] uppercase">Team: ${t.Team}</div>`).join('')}
+                ${pMatch.map(p => `<div onclick="openPlayer('${p.name}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-xs font-bold border-t border-zinc-900">${p.name} (${p.team})</div>`).join('')}
+            `;
         }
 
         function openPlayer(name) {
-            const p = players.find(x => x['Player Name'] === name);
-            if (!p) return;
-            
+            const p = players[name];
             document.getElementById('mainModal').style.display = 'block';
             document.getElementById('searchResults').classList.add('hidden');
-            
-            const isGK = (p.CleanSheets && parseFloat(p.CleanSheets) > 0);
-
             document.getElementById('modalContent').innerHTML = `
                 <div class="text-center mb-8">
-                    <h2 class="text-4xl font-black italic text-white leading-tight">${p['Player Name']}</h2>
-                    <p class="text-[#00ff85] font-black uppercase text-xs tracking-widest mt-2">${p.Team}</p>
+                    <h2 class="text-4xl font-black italic text-white">${p.name}</h2>
+                    <p class="text-[#00ff85] font-black uppercase text-xs tracking-widest">${p.team}</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Match Rating</div><div class="text-3xl font-black text-[#00ff85]">${p.MatchRatings || '-'}</div></div>
-                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Played</div><div class="text-3xl font-black">${p.Played || p.MatchesPlayed || '-'}</div></div>
-                    ${isGK ? 
-                        `<div class="card p-5 text-center col-span-2"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Clean Sheets</div><div class="text-3xl font-black text-blue-400">${p.CleanSheets}</div></div>` :
-                        `<div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Goals</div><div class="text-3xl font-black">${p.Goals || 0}</div></div>
-                         <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Assists</div><div class="text-3xl font-black">${p.Assists || 0}</div></div>`
-                    }
+                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Rating</div><div class="text-3xl font-black text-[#00ff85]">${p.rating || '-'}</div></div>
+                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Played</div><div class="text-3xl font-black">${p.played || '-'}</div></div>
+                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Goals</div><div class="text-3xl font-black">${p.goals}</div></div>
+                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Assists</div><div class="text-3xl font-black">${p.assists}</div></div>
+                    ${p.cleans > 0 ? `<div class="card p-5 text-center col-span-2"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Clean Sheets</div><div class="text-3xl font-black text-blue-400">${p.cleans}</div></div>` : ''}
                 </div>`;
         }
 
-        function openTeam(teamName) {
-            // Find players whose team includes the first word of the team name (to handle "Inter Miami CF" vs "Inter Miami")
-            const searchKey = teamName.split(' ')[0];
-            const roster = players.filter(p => p.Team && p.Team.includes(searchKey));
-            
+        function openTeam(name) {
+            const roster = Object.values(players).filter(p => p.team.includes(name.split(' ')[0]));
             document.getElementById('mainModal').style.display = 'block';
-            document.getElementById('searchResults').classList.add('hidden');
-            
             document.getElementById('modalContent').innerHTML = `
-                <h1 class="text-4xl font-black italic text-[#00ff85] mb-6">${teamName}</h1>
-                <div class="card">
-                    <div class="p-3 grid grid-cols-4 text-[9px] font-black text-zinc-600 uppercase border-b border-zinc-800">
-                        <div class="col-span-1">Player</div><div>G</div><div>A</div><div>RTG</div>
-                    </div>
-                    <div class="divide-y divide-zinc-800">
-                        ${roster.sort((a,b) => parseFloat(b.MatchRatings) - parseFloat(a.MatchRatings)).map(p => `
-                            <div onclick="openPlayer('${p['Player Name']}')" class="p-4 grid grid-cols-4 items-center text-xs hover:bg-zinc-800 cursor-pointer">
-                                <div class="font-bold truncate">${p['Player Name']}</div>
-                                <div>${p.Goals || 0}</div>
-                                <div>${p.Assists || 0}</div>
-                                <div class="text-[#00ff85] font-black">${p.MatchRatings || '-'}</div>
-                            </div>
-                        `).join('')}
-                    </div>
+                <h1 class="text-4xl font-black italic text-[#00ff85] mb-6">${name}</h1>
+                <div class="card divide-y divide-zinc-800">
+                    <div class="p-3 grid grid-cols-4 text-[9px] font-black text-zinc-600 uppercase"><div>Player</div><div>G</div><div>A</div><div>RTG</div></div>
+                    ${roster.sort((a,b) => b.goals - a.goals).map(p => `<div onclick="openPlayer('${p.name}')" class="p-4 grid grid-cols-4 items-center text-xs hover:bg-zinc-800 cursor-pointer">
+                        <div class="font-bold truncate">${p.name}</div><div>${p.goals}</div><div>${p.assists}</div><div class="text-[#00ff85] font-black">${p.rating || '-'}</div>
+                    </div>`).join('')}
                 </div>`;
         }
 
-        function showTab(tab) {
-            document.getElementById('section-standings').classList.toggle('hidden', tab !== 'standings');
-            document.getElementById('section-leaders').classList.toggle('hidden', tab !== 'leaders');
-            document.getElementById('btn-standings').classList.toggle('active', tab === 'standings');
-            document.getElementById('btn-leaders').classList.toggle('active', tab === 'leaders');
+        function showTab(t) {
+            document.getElementById('section-standings').classList.toggle('hidden', t !== 'standings');
+            document.getElementById('section-leaders').classList.toggle('hidden', t !== 'leaders');
+            document.getElementById('btn-standings').classList.toggle('active', t === 'standings');
+            document.getElementById('btn-leaders').classList.toggle('active', t === 'leaders');
         }
 
         function closeModal() { document.getElementById('mainModal').style.display = 'none'; }
-        
-        // Initialize
         init();
     </script>
 </body>
