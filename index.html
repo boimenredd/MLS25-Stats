@@ -24,7 +24,7 @@
 </head>
 <body class="max-w-2xl mx-auto pb-20 border-x border-zinc-900 shadow-2xl">
 
-    <div id="loading" class="loading-overlay">LOADING ACSF DATA...</div>
+    <div id="loading" class="loading-overlay">FETCHING ACSF DATA...</div>
 
     <header class="sticky top-0 bg-[#050505]/95 backdrop-blur-xl z-50 px-6 pt-8 border-b border-zinc-900">
         <div class="flex justify-between items-center mb-6">
@@ -79,7 +79,7 @@
             assists: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=1828601090&single=true&output=csv',
             cleans: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=1875623411&single=true&output=csv',
             ratings: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=692292778&single=true&output=csv',
-            standings: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=983480432&single=true&output=csv'
+            standings: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5yTQVQrEpc3LwF8vCZUu6rVk4vLFt97HjM5WYYQEy85b18G7XaV7m8FoNnd0VVg/pub?output=csv'
         };
 
         const EAST_TEAMS = ["Inter Miami", "Columbus", "Atlanta", "NY City", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "NY Red Bulls", "Toronto", "Montreal", "DC United"];
@@ -96,7 +96,6 @@
 
             standings = sData;
 
-            // Merging logic
             const process = (data, key) => {
                 data.forEach(row => {
                     const name = row['Player Name'];
@@ -182,7 +181,8 @@
         }
 
         function openTeam(name) {
-            const roster = Object.values(players).filter(p => p.team.includes(name.split(' ')[0]));
+            const searchKey = name.split(' ')[0];
+            const roster = Object.values(players).filter(p => p.team && p.team.includes(searchKey));
             document.getElementById('mainModal').style.display = 'block';
             document.getElementById('modalContent').innerHTML = `
                 <h1 class="text-4xl font-black italic text-[#00ff85] mb-6">${name}</h1>
