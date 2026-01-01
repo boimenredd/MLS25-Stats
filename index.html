@@ -137,8 +137,10 @@
                 .replace(/\s(fc|sc|united|city|cf|mls|city sc|city fc|united fc|football club)$/g, '')
                 .trim();
             
-            // Critical Fix: Map Earthquakes/SJ variations to San Jose
+            // Fix San Jose
             if (s.includes("jose") || s.includes("earthquakes") || s === "sj") return "San Jose";
+            // Fix Vancouver
+            if (s.includes("vancouver") || s.includes("whitecaps")) return "Vancouver";
             
             if (s.includes("red bull") || s.includes("nyrb") || s.includes("rbny")) return "Red Bulls";
             if (s.includes("kansas") || s.includes("sporting")) return "Kansas City";
@@ -151,7 +153,7 @@
             if (s.includes("dc")) return "D.C.";
             if (s.includes("miami")) return "Miami";
             
-            // Title case for others
+            // Default Title Case
             return s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
 
@@ -198,12 +200,11 @@
         }
 
         function render() {
-            // These names must match the output of normalizeTeam exactly
+            // Must match normalizeTeam exactly
             const EAST_LIST = ["Miami", "Columbus", "Nycfc", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "Red Bulls", "Toronto", "Montreal", "D.C.", "Atlanta"];
             const WEST_LIST = ["Seattle", "San Diego", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "LAFC", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St Louis"];
 
             const drawTbl = (id, list) => {
-                // Filter and ensure we only show teams explicitly in our conference lists
                 const data = standingsRaw.filter(s => list.includes(normalizeTeam(s.Team))).sort((a,b) => b.PTS - a.PTS);
                 document.getElementById(id).innerHTML = `<thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead><tbody>${data.map((r, i) => `
                     <tr class="clickable" onclick="openTeam('${normalizeTeam(r.Team)}')">
