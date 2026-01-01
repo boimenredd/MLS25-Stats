@@ -12,6 +12,8 @@
         .nav-btn { font-size: 11px; font-weight: 900; color: #52525b; border-bottom: 2px solid transparent; padding-bottom: 8px; transition: 0.2s; }
         .nav-btn.active { color: #00ff85; border-color: #00ff85; }
         .card { background: #111113; border: 1px solid #222225; border-radius: 12px; overflow: hidden; }
+        .leader-scroll { max-height: 280px; overflow-y: auto; scrollbar-width: none; }
+        .leader-scroll::-webkit-scrollbar { display: none; }
         .badge { background: #00ff85; color: #050505; padding: 2px 6px; border-radius: 4px; font-weight: 900; font-size: 10px; }
         table { width: 100%; text-align: left; font-size: 12px; }
         th { padding: 12px; color: #71717a; text-transform: uppercase; font-size: 10px; font-weight: 900; }
@@ -21,8 +23,8 @@
         .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #111113; border: 1px solid #222225; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; }
         .loading-overlay { position: fixed; inset: 0; background: #050505; display: flex; align-items: center; justify-content: center; z-index: 200; font-weight: 900; color: #00ff85; }
         
-        /* Form Colors */
-        .rating-box { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-weight: 900; font-size: 10px; }
+        /* Form Box Styles */
+        .rating-box { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-weight: 900; font-size: 10px; border: 1px solid rgba(255,255,255,0.05); }
         .rating-high { background: #00ff85; color: #050505; }
         .rating-mid { background: #fbbf24; color: #050505; }
         .rating-low { background: #ef4444; color: #ffffff; }
@@ -30,7 +32,7 @@
 </head>
 <body class="max-w-2xl mx-auto pb-20 border-x border-zinc-900 shadow-2xl">
 
-    <div id="loading" class="loading-overlay">SYNCING LIVE STATS...</div>
+    <div id="loading" class="loading-overlay">SYNCING RECENT FORM...</div>
 
     <header class="sticky top-0 bg-[#050505]/95 backdrop-blur-xl z-50 px-6 pt-8 border-b border-zinc-900">
         <div class="flex justify-between items-center mb-6">
@@ -64,10 +66,10 @@
 
         <div id="section-leaders" class="hidden space-y-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Goals</h3><div id="list-goals" class="card divide-y divide-zinc-800"></div></div>
-                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Assists</h3><div id="list-assists" class="card divide-y divide-zinc-800"></div></div>
-                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Match Ratings</h3><div id="list-ratings" class="card divide-y divide-zinc-800"></div></div>
-                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Clean Sheets</h3><div id="list-cleans" class="card divide-y divide-zinc-800"></div></div>
+                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Top 10 Goals</h3><div id="list-goals" class="card leader-scroll divide-y divide-zinc-800"></div></div>
+                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Top 10 Assists</h3><div id="list-assists" class="card leader-scroll divide-y divide-zinc-800"></div></div>
+                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Top 10 Ratings</h3><div id="list-ratings" class="card leader-scroll divide-y divide-zinc-800"></div></div>
+                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Top 10 Clean Sheets</h3><div id="list-cleans" class="card leader-scroll divide-y divide-zinc-800"></div></div>
             </div>
         </div>
     </main>
@@ -96,44 +98,37 @@
 
         async function init() {
             const fetchCsv = (url) => new Promise(res => Papa.parse(url, { download: true, header: true, complete: d => res(d.data) }));
-            
             const [gData, aData, cData, rData, sData, hData] = await Promise.all([
                 fetchCsv(URLS.goals), fetchCsv(URLS.assists), fetchCsv(URLS.cleans), fetchCsv(URLS.ratings), fetchCsv(URLS.standings), fetchCsv(URLS.history)
             ]);
 
             standings = sData;
 
-            // Merge individual stats
             const process = (data, key) => {
                 data.forEach(row => {
                     const name = row['Player Name'];
                     if(!name) return;
                     if(!players[name]) players[name] = { name, team: row.Team, goals: 0, assists: 0, cleans: 0, rating: 0, played: 0, history: [] };
-                    
                     if(key === 'goals') players[name].goals = parseInt(row.Goals) || 0;
                     if(key === 'assists') players[name].assists = parseInt(row.Assists) || 0;
                     if(key === 'cleans') players[name].cleans = parseInt(row['Clean Sheets']) || 0;
-                    if(key === 'ratings') {
-                        players[name].rating = parseFloat(row['Average Rating']) || 0;
-                        players[name].played = row['Matches Played'] || 0;
-                    }
+                    if(key === 'ratings') { players[name].rating = parseFloat(row['Average Rating']) || 0; players[name].played = row['Matches Played'] || 0; }
                 });
             };
 
-            process(gData, 'goals');
-            process(aData, 'assists');
-            process(cData, 'cleans');
-            process(rData, 'ratings');
+            process(gData, 'goals'); process(aData, 'assists'); process(cData, 'cleans'); process(rData, 'ratings');
 
-            // Process Match History
             hData.forEach(row => {
                 const name = row['Player Name'];
                 if(name && players[name]) {
-                    // Collect all match rating columns (skipping name/team/average)
-                    players[name].history = Object.keys(row)
-                        .filter(key => !['Player Name', 'Team', 'Average', 'Total', ''].includes(key))
-                        .map(key => parseFloat(row[key]))
-                        .filter(val => !isNaN(val) && val > 0);
+                    // Extract all rating columns, then reverse so bottom (most recent) comes last for display logic
+                    let rawRtg = Object.keys(row)
+                        .filter(k => !['Player Name', 'Team', 'Average', 'Total', ''].includes(k))
+                        .map(k => parseFloat(row[k]))
+                        .filter(v => !isNaN(v) && v > 0);
+                    
+                    // Taking the last 10 entries from the bottom of the sheet
+                    players[name].history = rawRtg.slice(-10);
                 }
             });
 
@@ -154,17 +149,17 @@
             renderTbl('table-western', WEST_TEAMS);
 
             const drawLeaders = (id, key) => {
-                const list = Object.values(players).sort((a,b) => b[key] - a[key]).slice(0, 5);
-                document.getElementById(id).innerHTML = list.map(p => `
+                const list = Object.values(players).sort((a,b) => b[key] - a[key]).slice(0, 10);
+                document.getElementById(id).innerHTML = list.map((p, i) => `
                     <div class="p-3 flex justify-between items-center text-xs clickable" onclick="openPlayer('${p.name}')">
-                        <div><div class="font-bold">${p.name}</div><div class="text-[9px] text-zinc-600 uppercase font-black">${p.team}</div></div>
-                        <span class="badge">${p[key]}</span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] text-zinc-700 font-black">#${i+1}</span>
+                            <div><div class="font-bold">${p.name}</div><div class="text-[9px] text-zinc-600 uppercase font-black">${p.team}</div></div>
+                        </div>
+                        <span class="badge">${key === 'rating' ? p[key].toFixed(2) : p[key]}</span>
                     </div>`).join('');
             };
-            drawLeaders('list-goals', 'goals');
-            drawLeaders('list-assists', 'assists');
-            drawLeaders('list-ratings', 'rating');
-            drawLeaders('list-cleans', 'cleans');
+            drawLeaders('list-goals', 'goals'); drawLeaders('list-assists', 'assists'); drawLeaders('list-ratings', 'rating'); drawLeaders('list-cleans', 'cleans');
         }
 
         function openPlayer(name) {
@@ -172,14 +167,16 @@
             document.getElementById('mainModal').style.display = 'block';
             document.getElementById('searchResults').classList.add('hidden');
             
-            // Build Match History UI
             const historyHtml = p.history.length > 0 ? `
-                <div class="mt-6">
-                    <h3 class="text-[10px] font-black text-zinc-500 mb-3 uppercase tracking-widest">Match Rating History</h3>
-                    <div class="flex flex-wrap gap-2">
+                <div class="mt-8">
+                    <div class="flex justify-between items-end mb-4">
+                        <h3 class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Last 10 Matches (Recent →)</h3>
+                        <span class="text-[9px] text-zinc-700 font-bold">LATEST ON RIGHT</span>
+                    </div>
+                    <div class="flex gap-2">
                         ${p.history.map(rtg => {
-                            let colorClass = rtg >= 7.5 ? 'rating-high' : (rtg >= 6.5 ? 'rating-mid' : 'rating-low');
-                            return `<div class="rating-box ${colorClass}">${rtg.toFixed(1)}</div>`;
+                            let c = rtg >= 7.5 ? 'rating-high' : (rtg >= 6.5 ? 'rating-mid' : 'rating-low');
+                            return `<div class="rating-box ${c}">${rtg.toFixed(1)}</div>`;
                         }).join('')}
                     </div>
                 </div>
@@ -191,8 +188,8 @@
                     <p class="text-[#00ff85] font-black uppercase text-xs tracking-widest">${p.team}</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Avg Rating</div><div class="text-3xl font-black text-[#00ff85]">${p.rating.toFixed(2) || '-'}</div></div>
-                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Played</div><div class="text-3xl font-black">${p.played || '-'}</div></div>
+                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Season Avg</div><div class="text-3xl font-black text-[#00ff85]">${p.rating.toFixed(2)}</div></div>
+                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Matches</div><div class="text-3xl font-black">${p.played}</div></div>
                     <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Goals</div><div class="text-3xl font-black">${p.goals}</div></div>
                     <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Assists</div><div class="text-3xl font-black">${p.assists}</div></div>
                 </div>
@@ -201,8 +198,6 @@
             `;
         }
 
-        // ... [Rest of the handleSearch, openTeam, showTab, and closeModal functions from previous working version] ...
-        
         function handleSearch() {
             const q = document.getElementById('mainSearch').value.toLowerCase();
             const res = document.getElementById('searchResults');
@@ -215,6 +210,7 @@
                 ${pMatch.map(p => `<div onclick="openPlayer('${p.name}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-xs font-bold border-t border-zinc-900">${p.name} (${p.team})</div>`).join('')}
             `;
         }
+
         function openTeam(name) {
             const searchKey = name.split(' ')[0];
             const roster = Object.values(players).filter(p => p.team && p.team.includes(searchKey));
@@ -224,18 +220,19 @@
                 <div class="card divide-y divide-zinc-800">
                     <div class="p-3 grid grid-cols-4 text-[9px] font-black text-zinc-600 uppercase"><div>Player</div><div>G</div><div>A</div><div>RTG</div></div>
                     ${roster.sort((a,b) => b.goals - a.goals).map(p => `<div onclick="openPlayer('${p.name}')" class="p-4 grid grid-cols-4 items-center text-xs hover:bg-zinc-800 cursor-pointer">
-                        <div class="font-bold truncate">${p.name}</div><div>${p.goals}</div><div>${p.assists}</div><div class="text-[#00ff85] font-black">${p.rating.toFixed(2) || '-'}</div>
+                        <div class="font-bold truncate">${p.name}</div><div>${p.goals}</div><div>${p.assists}</div><div class="text-[#00ff85] font-black">${p.rating.toFixed(2)}</div>
                     </div>`).join('')}
                 </div>`;
         }
+
         function showTab(t) {
             document.getElementById('section-standings').classList.toggle('hidden', t !== 'standings');
             document.getElementById('section-leaders').classList.toggle('hidden', t !== 'leaders');
             document.getElementById('btn-standings').classList.toggle('active', t === 'standings');
             document.getElementById('btn-leaders').classList.toggle('active', t === 'leaders');
         }
+
         function closeModal() { document.getElementById('mainModal').style.display = 'none'; }
-        
         init();
     </script>
 </body>
