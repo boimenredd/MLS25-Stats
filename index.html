@@ -20,11 +20,17 @@
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 100; padding: 20px; overflow-y: auto; }
         .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #111113; border: 1px solid #222225; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; }
         .loading-overlay { position: fixed; inset: 0; background: #050505; display: flex; align-items: center; justify-content: center; z-index: 200; font-weight: 900; color: #00ff85; }
+        
+        /* Form Colors */
+        .rating-box { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-weight: 900; font-size: 10px; }
+        .rating-high { background: #00ff85; color: #050505; }
+        .rating-mid { background: #fbbf24; color: #050505; }
+        .rating-low { background: #ef4444; color: #ffffff; }
     </style>
 </head>
 <body class="max-w-2xl mx-auto pb-20 border-x border-zinc-900 shadow-2xl">
 
-    <div id="loading" class="loading-overlay">FETCHING ACSF DATA...</div>
+    <div id="loading" class="loading-overlay">SYNCING LIVE STATS...</div>
 
     <header class="sticky top-0 bg-[#050505]/95 backdrop-blur-xl z-50 px-6 pt-8 border-b border-zinc-900">
         <div class="flex justify-between items-center mb-6">
@@ -79,6 +85,7 @@
             assists: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=1828601090&single=true&output=csv',
             cleans: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=1875623411&single=true&output=csv',
             ratings: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=692292778&single=true&output=csv',
+            history: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=812230696&single=true&output=csv',
             standings: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5yTQVQrEpc3LwF8vCZUu6rVk4vLFt97HjM5WYYQEy85b18G7XaV7m8FoNnd0VVg/pub?output=csv'
         };
 
@@ -90,17 +97,18 @@
         async function init() {
             const fetchCsv = (url) => new Promise(res => Papa.parse(url, { download: true, header: true, complete: d => res(d.data) }));
             
-            const [gData, aData, cData, rData, sData] = await Promise.all([
-                fetchCsv(URLS.goals), fetchCsv(URLS.assists), fetchCsv(URLS.cleans), fetchCsv(URLS.ratings), fetchCsv(URLS.standings)
+            const [gData, aData, cData, rData, sData, hData] = await Promise.all([
+                fetchCsv(URLS.goals), fetchCsv(URLS.assists), fetchCsv(URLS.cleans), fetchCsv(URLS.ratings), fetchCsv(URLS.standings), fetchCsv(URLS.history)
             ]);
 
             standings = sData;
 
+            // Merge individual stats
             const process = (data, key) => {
                 data.forEach(row => {
                     const name = row['Player Name'];
                     if(!name) return;
-                    if(!players[name]) players[name] = { name, team: row.Team, goals: 0, assists: 0, cleans: 0, rating: 0, played: 0 };
+                    if(!players[name]) players[name] = { name, team: row.Team, goals: 0, assists: 0, cleans: 0, rating: 0, played: 0, history: [] };
                     
                     if(key === 'goals') players[name].goals = parseInt(row.Goals) || 0;
                     if(key === 'assists') players[name].assists = parseInt(row.Assists) || 0;
@@ -116,6 +124,18 @@
             process(aData, 'assists');
             process(cData, 'cleans');
             process(rData, 'ratings');
+
+            // Process Match History
+            hData.forEach(row => {
+                const name = row['Player Name'];
+                if(name && players[name]) {
+                    // Collect all match rating columns (skipping name/team/average)
+                    players[name].history = Object.keys(row)
+                        .filter(key => !['Player Name', 'Team', 'Average', 'Total', ''].includes(key))
+                        .map(key => parseFloat(row[key]))
+                        .filter(val => !isNaN(val) && val > 0);
+                }
+            });
 
             document.getElementById('loading').style.display = 'none';
             render();
@@ -147,39 +167,54 @@
             drawLeaders('list-cleans', 'cleans');
         }
 
-        function handleSearch() {
-            const q = document.getElementById('mainSearch').value.toLowerCase();
-            const res = document.getElementById('searchResults');
-            if (q.length < 2) { res.classList.add('hidden'); return; }
-
-            const pMatch = Object.values(players).filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
-            const tMatch = standings.filter(s => s.Team && s.Team.toLowerCase().includes(q)).slice(0, 3);
-
-            res.classList.remove('hidden');
-            res.innerHTML = `
-                ${tMatch.map(t => `<div onclick="openTeam('${t.Team}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-[10px] font-black text-[#00ff85] uppercase">Team: ${t.Team}</div>`).join('')}
-                ${pMatch.map(p => `<div onclick="openPlayer('${p.name}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-xs font-bold border-t border-zinc-900">${p.name} (${p.team})</div>`).join('')}
-            `;
-        }
-
         function openPlayer(name) {
             const p = players[name];
             document.getElementById('mainModal').style.display = 'block';
             document.getElementById('searchResults').classList.add('hidden');
+            
+            // Build Match History UI
+            const historyHtml = p.history.length > 0 ? `
+                <div class="mt-6">
+                    <h3 class="text-[10px] font-black text-zinc-500 mb-3 uppercase tracking-widest">Match Rating History</h3>
+                    <div class="flex flex-wrap gap-2">
+                        ${p.history.map(rtg => {
+                            let colorClass = rtg >= 7.5 ? 'rating-high' : (rtg >= 6.5 ? 'rating-mid' : 'rating-low');
+                            return `<div class="rating-box ${colorClass}">${rtg.toFixed(1)}</div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            ` : '';
+
             document.getElementById('modalContent').innerHTML = `
                 <div class="text-center mb-8">
                     <h2 class="text-4xl font-black italic text-white">${p.name}</h2>
                     <p class="text-[#00ff85] font-black uppercase text-xs tracking-widest">${p.team}</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Rating</div><div class="text-3xl font-black text-[#00ff85]">${p.rating || '-'}</div></div>
+                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Avg Rating</div><div class="text-3xl font-black text-[#00ff85]">${p.rating.toFixed(2) || '-'}</div></div>
                     <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Played</div><div class="text-3xl font-black">${p.played || '-'}</div></div>
                     <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Goals</div><div class="text-3xl font-black">${p.goals}</div></div>
                     <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Assists</div><div class="text-3xl font-black">${p.assists}</div></div>
-                    ${p.cleans > 0 ? `<div class="card p-5 text-center col-span-2"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Clean Sheets</div><div class="text-3xl font-black text-blue-400">${p.cleans}</div></div>` : ''}
-                </div>`;
+                </div>
+                ${historyHtml}
+                ${p.cleans > 0 ? `<div class="card mt-4 p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Clean Sheets</div><div class="text-3xl font-black text-blue-400">${p.cleans}</div></div>` : ''}
+            `;
         }
 
+        // ... [Rest of the handleSearch, openTeam, showTab, and closeModal functions from previous working version] ...
+        
+        function handleSearch() {
+            const q = document.getElementById('mainSearch').value.toLowerCase();
+            const res = document.getElementById('searchResults');
+            if (q.length < 2) { res.classList.add('hidden'); return; }
+            const pMatch = Object.values(players).filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
+            const tMatch = standings.filter(s => s.Team && s.Team.toLowerCase().includes(q)).slice(0, 3);
+            res.classList.remove('hidden');
+            res.innerHTML = `
+                ${tMatch.map(t => `<div onclick="openTeam('${t.Team}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-[10px] font-black text-[#00ff85] uppercase">Team: ${t.Team}</div>`).join('')}
+                ${pMatch.map(p => `<div onclick="openPlayer('${p.name}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-xs font-bold border-t border-zinc-900">${p.name} (${p.team})</div>`).join('')}
+            `;
+        }
         function openTeam(name) {
             const searchKey = name.split(' ')[0];
             const roster = Object.values(players).filter(p => p.team && p.team.includes(searchKey));
@@ -189,19 +224,18 @@
                 <div class="card divide-y divide-zinc-800">
                     <div class="p-3 grid grid-cols-4 text-[9px] font-black text-zinc-600 uppercase"><div>Player</div><div>G</div><div>A</div><div>RTG</div></div>
                     ${roster.sort((a,b) => b.goals - a.goals).map(p => `<div onclick="openPlayer('${p.name}')" class="p-4 grid grid-cols-4 items-center text-xs hover:bg-zinc-800 cursor-pointer">
-                        <div class="font-bold truncate">${p.name}</div><div>${p.goals}</div><div>${p.assists}</div><div class="text-[#00ff85] font-black">${p.rating || '-'}</div>
+                        <div class="font-bold truncate">${p.name}</div><div>${p.goals}</div><div>${p.assists}</div><div class="text-[#00ff85] font-black">${p.rating.toFixed(2) || '-'}</div>
                     </div>`).join('')}
                 </div>`;
         }
-
         function showTab(t) {
             document.getElementById('section-standings').classList.toggle('hidden', t !== 'standings');
             document.getElementById('section-leaders').classList.toggle('hidden', t !== 'leaders');
             document.getElementById('btn-standings').classList.toggle('active', t === 'standings');
             document.getElementById('btn-leaders').classList.toggle('active', t === 'leaders');
         }
-
         function closeModal() { document.getElementById('mainModal').style.display = 'none'; }
+        
         init();
     </script>
 </body>
