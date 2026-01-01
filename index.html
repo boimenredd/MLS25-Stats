@@ -12,7 +12,7 @@
         .nav-btn { font-size: 11px; font-weight: 900; color: #52525b; border-bottom: 2px solid transparent; padding-bottom: 8px; transition: 0.2s; }
         .nav-btn.active { color: #00ff85; border-color: #00ff85; }
         .card { background: #111113; border: 1px solid #222225; border-radius: 12px; overflow: hidden; }
-        .leader-scroll { max-height: 350px; overflow-y: auto; scrollbar-width: none; }
+        .leader-scroll { max-height: 400px; overflow-y: auto; scrollbar-width: none; }
         .leader-scroll::-webkit-scrollbar { display: none; }
         .badge { background: #00ff85; color: #050505; padding: 2px 6px; border-radius: 4px; font-weight: 900; font-size: 10px; }
         table { width: 100%; text-align: left; font-size: 12px; }
@@ -21,27 +21,24 @@
         tr.clickable:hover { background: #18181b; cursor: pointer; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 100; padding: 20px; overflow-y: auto; }
         .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #111113; border: 1px solid #222225; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; }
-        
-        /* MATCH RATING BOXES */
-        .rating-box { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 11px; border: 1px solid rgba(255,255,255,0.05); }
+        .rating-box { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 11px; border: 1px solid rgba(255,255,255,0.05); }
         .rating-high { background: #00ff85; color: #050505; box-shadow: 0 0 15px rgba(0,255,133,0.2); }
         .rating-mid { background: #fbbf24; color: #050505; }
         .rating-low { background: #ef4444; color: #ffffff; }
-
         .loading-overlay { position: fixed; inset: 0; background: #050505; display: flex; align-items: center; justify-content: center; z-index: 200; font-weight: 900; color: #00ff85; }
-        .team-logo { width: 22px; height: 22px; object-fit: contain; }
+        .team-logo-img { width: 24px; height: 24px; object-fit: contain; }
     </style>
 </head>
 <body class="max-w-2xl mx-auto pb-20 border-x border-zinc-900 shadow-2xl">
 
-    <div id="loading" class="loading-overlay">SYNCHRONIZING MATCH HISTORY...</div>
+    <div id="loading" class="loading-overlay">SYNCING LIVE DATA...</div>
 
     <header class="sticky top-0 bg-[#050505]/95 backdrop-blur-xl z-50 px-6 pt-8 border-b border-zinc-900">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-black italic tracking-tighter text-[#00ff85]">ACSF</h1>
             <div class="relative w-48 md:w-64">
                 <input type="text" id="mainSearch" placeholder="Search Player or Team..." class="w-full bg-[#18181b] border border-zinc-800 rounded-lg px-4 py-2 text-xs outline-none focus:border-[#00ff85]" oninput="handleSearch()">
-                <div id="searchResults" class="search-results hidden shadow-2xl"></div>
+                <div id="searchResults" class="search-results hidden"></div>
             </div>
         </div>
         <nav class="flex space-x-8">
@@ -51,39 +48,69 @@
     </header>
 
     <main class="px-4 mt-8">
-        <div id="section-standings" class="space-y-10">
-            <div>
-                <h3 class="text-[10px] font-black text-zinc-500 mb-4 uppercase tracking-widest flex items-center gap-2">
-                    <span class="w-2 h-2 bg-blue-500 rounded-full"></span> Eastern Conference
-                </h3>
+        <div id="section-standings">
+            <div class="mb-10">
+                <h3 class="text-[10px] font-black text-zinc-500 mb-4 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-blue-500 rounded-full"></span> Eastern Conference</h3>
                 <div class="card"><table id="table-eastern"></table></div>
             </div>
             <div>
-                <h3 class="text-[10px] font-black text-zinc-500 mb-4 uppercase tracking-widest flex items-center gap-2">
-                    <span class="w-2 h-2 bg-red-500 rounded-full"></span> Western Conference
-                </h3>
+                <h3 class="text-[10px] font-black text-zinc-500 mb-4 uppercase flex items-center gap-2"><span class="w-2 h-2 bg-red-500 rounded-full"></span> Western Conference</h3>
                 <div class="card"><table id="table-western"></table></div>
             </div>
         </div>
 
         <div id="section-leaders" class="hidden space-y-8 pb-10">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Top 10 Goals</h3><div id="list-goals" class="card leader-scroll divide-y divide-zinc-800"></div></div>
-                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Top 10 Assists</h3><div id="list-assists" class="card leader-scroll divide-y divide-zinc-800"></div></div>
-                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Top 10 Ratings</h3><div id="list-ratings" class="card leader-scroll divide-y divide-zinc-800"></div></div>
-                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Top 10 Clean Sheets</h3><div id="list-cleans" class="card leader-scroll divide-y divide-zinc-800"></div></div>
+                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Goals</h3><div id="list-goals" class="card leader-scroll divide-y divide-zinc-800"></div></div>
+                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Assists</h3><div id="list-assists" class="card leader-scroll divide-y divide-zinc-800"></div></div>
+                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Average Rating</h3><div id="list-ratings" class="card leader-scroll divide-y divide-zinc-800"></div></div>
+                <div><h3 class="text-[9px] font-black text-zinc-500 mb-2 uppercase">Clean Sheets</h3><div id="list-cleans" class="card leader-scroll divide-y divide-zinc-800"></div></div>
             </div>
         </div>
     </main>
 
     <div id="mainModal" class="modal">
         <div class="max-w-md mx-auto">
-            <button onclick="closeModal()" class="mb-6 text-[#00ff85] text-xs font-black uppercase tracking-widest">← Back to Hub</button>
+            <button onclick="closeModal()" class="mb-6 text-[#00ff85] text-xs font-black uppercase">← Back</button>
             <div id="modalContent"></div>
         </div>
     </div>
 
     <script>
+        const LOGO_DB = {
+            "atlanta": "https://images.mlssoccer.com/image/upload/v1593358362/assets/atl/logos/ATL_United_Secondary_Logo_Gold_1.png",
+            "austin": "https://images.mlssoccer.com/image/upload/v1593358362/assets/atx/logos/Austin_FC_Logo.png",
+            "charlotte": "https://images.mlssoccer.com/image/upload/v1615410113/assets/clt/logos/Charlotte_FC_Logo.png",
+            "chicago": "https://images.mlssoccer.com/image/upload/v1634064563/assets/chi/logos/Chicago_Fire_FC_Logo.png",
+            "cincinnati": "https://images.mlssoccer.com/image/upload/v1593358362/assets/cin/logos/FC_Cincinnati_Logo.png",
+            "colorado": "https://images.mlssoccer.com/image/upload/v1593358362/assets/col/logos/Colorado_Rapids_Logo.png",
+            "columbus": "https://images.mlssoccer.com/image/upload/v1620655160/assets/clb/logos/Columbus_Crew_Logo.png",
+            "d.c.": "https://images.mlssoccer.com/image/upload/v1593358362/assets/dc/logos/DC_United_Logo.png",
+            "dallas": "https://images.mlssoccer.com/image/upload/v1593358362/assets/dal/logos/FC_Dallas_Logo.png",
+            "houston": "https://images.mlssoccer.com/image/upload/v1605629479/assets/hou/logos/Houston_Dynamo_FC_Logo.png",
+            "miami": "https://images.mlssoccer.com/image/upload/v1593358362/assets/mia/logos/Inter_Miami_CF_Logo.png",
+            "galaxy": "https://images.mlssoccer.com/image/upload/v1593358362/assets/la/logos/LA_Galaxy_Logo.png",
+            "los angeles": "https://images.mlssoccer.com/image/upload/v1593358362/assets/lafc/logos/LAFC_Logo.png",
+            "minnesota": "https://images.mlssoccer.com/image/upload/v1593358362/assets/min/logos/Minnesota_United_FC_Logo.png",
+            "montreal": "https://images.mlssoccer.com/image/upload/v1620313531/assets/mtl/logos/CF_Montreal_Logo.png",
+            "nashville": "https://images.mlssoccer.com/image/upload/v1593358362/assets/nsh/logos/Nashville_SC_Logo.png",
+            "england": "https://images.mlssoccer.com/image/upload/v1636040177/assets/ne/logos/New_England_Revolution_Logo.png",
+            "ny city": "https://images.mlssoccer.com/image/upload/v1593358362/assets/nyc/logos/NYCFC_Logo.png",
+            "nycfc": "https://images.mlssoccer.com/image/upload/v1593358362/assets/nyc/logos/NYCFC_Logo.png",
+            "red bulls": "https://images.mlssoccer.com/image/upload/v1593358362/assets/ny/logos/NY_Red_Bulls_Logo.png",
+            "orlando": "https://images.mlssoccer.com/image/upload/v1593358362/assets/orl/logos/Orlando_City_SC_Logo.png",
+            "philadelphia": "https://images.mlssoccer.com/image/upload/v1593358362/assets/phi/logos/Philadelphia_Union_Logo.png",
+            "portland": "https://images.mlssoccer.com/image/upload/v1593358362/assets/por/logos/Portland_Timbers_Logo.png",
+            "salt lake": "https://images.mlssoccer.com/image/upload/v1593358362/assets/rsl/logos/Real_Salt_Lake_Logo.png",
+            "san jose": "https://images.mlssoccer.com/image/upload/v1593358362/assets/sj/logos/San_Jose_Earthquakes_Logo.png",
+            "seattle": "https://images.mlssoccer.com/image/upload/v1692288827/assets/sea/logos/Seattle_Sounders_FC_Logo.png",
+            "sporting": "https://images.mlssoccer.com/image/upload/v1593358362/assets/skc/logos/Sporting_Kansas_City_Logo.png",
+            "st. louis": "https://images.mlssoccer.com/image/upload/v1602701235/assets/stl/logos/St_Louis_CITY_SC_Logo.png",
+            "toronto": "https://images.mlssoccer.com/image/upload/v1593358362/assets/tor/logos/Toronto_FC_Logo.png",
+            "vancouver": "https://images.mlssoccer.com/image/upload/v1593358362/assets/van/logos/Vancouver_Whitecaps_FC_Logo.png",
+            "diego": "https://images.mlssoccer.com/image/upload/v1697746413/assets/sd/logos/San_Diego_FC_Logo.png"
+        };
+
         const URLS = {
             goals: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=0&single=true&output=csv',
             assists: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQGYlxWXa8fXFdQDf07aZrImlOsTiVcT36kgCbJKqlqDIWkhEEL7h642GOmJJx0uGBhqmeGz5OKmPqZ/pub?gid=1828601090&single=true&output=csv',
@@ -93,132 +120,62 @@
             standings: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5yTQVQrEpc3LwF8vCZUu6rVk4vLFt97HjM5WYYQEy85b18G7XaV7m8FoNnd0VVg/pub?output=csv'
         };
 
-        const TEAM_LOGOS = {
-            "Atlanta": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Atlanta_United_FC_Logo.svg/512px-Atlanta_United_FC_Logo.svg.png",
-            "Austin": "https://upload.wikimedia.org/wikipedia/en/thumb/0/05/Austin_FC_logo.svg/512px-Austin_FC_logo.svg.png",
-            "Charlotte": "https://upload.wikimedia.org/wikipedia/en/thumb/f/f6/Charlotte_FC_logo.svg/512px-Charlotte_FC_logo.svg.png",
-            "Chicago": "https://upload.wikimedia.org/wikipedia/en/thumb/1/1d/Chicago_Fire_FC_logo.svg/512px-Chicago_Fire_FC_logo.svg.png",
-            "Cincinnati": "https://upload.wikimedia.org/wikipedia/en/thumb/f/f2/FC_Cincinnati_logo_2018.svg/512px-FC_Cincinnati_logo_2018.svg.png",
-            "Colorado": "https://upload.wikimedia.org/wikipedia/en/thumb/b/ba/Colorado_Rapids_logo.svg/512px-Colorado_Rapids_logo.svg.png",
-            "Columbus": "https://upload.wikimedia.org/wikipedia/en/thumb/3/30/Columbus_Crew_logo_2021.svg/512px-Columbus_Crew_logo_2021.svg.png",
-            "DC United": "https://upload.wikimedia.org/wikipedia/en/thumb/0/06/D.C._United_logo_%282016%29.svg/512px-D.C._United_logo_%282016%29.svg.png",
-            "Dallas": "https://upload.wikimedia.org/wikipedia/en/thumb/0/03/FC_Dallas_logo.svg/512px-FC_Dallas_logo.svg.png",
-            "Houston": "https://upload.wikimedia.org/wikipedia/en/thumb/c/c2/Houston_Dynamo_FC_logo.svg/512px-Houston_Dynamo_FC_logo.svg.png",
-            "Kansas City": "https://upload.wikimedia.org/wikipedia/en/thumb/1/13/Sporting_Kansas_City_logo.svg/512px-Sporting_Kansas_City_logo.svg.png",
-            "LA Galaxy": "https://upload.wikimedia.org/wikipedia/en/thumb/1/10/LA_Galaxy_logo_%282007%29.svg/512px-LA_Galaxy_logo_%282007%29.svg.png",
-            "Los Angeles": "https://upload.wikimedia.org/wikipedia/en/thumb/a/ad/Los_Angeles_FC_logo.svg/512px-Los_Angeles_FC_logo.svg.png",
-            "LAFC": "https://upload.wikimedia.org/wikipedia/en/thumb/a/ad/Los_Angeles_FC_logo.svg/512px-Los_Angeles_FC_logo.svg.png",
-            "Inter Miami": "https://upload.wikimedia.org/wikipedia/en/thumb/5/5c/Inter_Miami_CF_logo.svg/512px-Inter_Miami_CF_logo.svg.png",
-            "Minnesota": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a2/Minnesota_United_FC_logo.svg/512px-Minnesota_United_FC_logo.svg.png",
-            "Montreal": "https://upload.wikimedia.org/wikipedia/en/thumb/2/23/CF_Montr%C3%A9al_logo.svg/512px-CF_Montr%C3%A9al_logo.svg.png",
-            "Nashville": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a1/Nashville_SC_logo.svg/512px-Nashville_SC_logo.svg.png",
-            "New England": "https://upload.wikimedia.org/wikipedia/en/thumb/a/ae/New_England_Revolution_logo_2021.svg/512px-New_England_Revolution_logo_2021.svg.png",
-            "NY City": "https://upload.wikimedia.org/wikipedia/en/thumb/f/f7/New_York_City_FC_logo.svg/512px-New_York_City_FC_logo.svg.png",
-            "NYCFC": "https://upload.wikimedia.org/wikipedia/en/thumb/f/f7/New_York_City_FC_logo.svg/512px-New_York_City_FC_logo.svg.png",
-            "NY Red Bulls": "https://upload.wikimedia.org/wikipedia/en/thumb/4/4b/New_York_Red_Bulls_logo.svg/512px-New_York_Red_Bulls_logo.svg.png",
-            "Orlando": "https://upload.wikimedia.org/wikipedia/en/thumb/7/70/Orlando_City_SC_logo.svg/512px-Orlando_City_SC_logo.svg.png",
-            "Philadelphia": "https://upload.wikimedia.org/wikipedia/en/thumb/e/e0/Philadelphia_Union_logo.svg/512px-Philadelphia_Union_logo.svg.png",
-            "Portland": "https://upload.wikimedia.org/wikipedia/en/thumb/f/f1/Portland_Timbers_logo.svg/512px-Portland_Timbers_logo.svg.png",
-            "Salt Lake": "https://upload.wikimedia.org/wikipedia/en/thumb/4/4c/Real_Salt_Lake_logo.svg/512px-Real_Salt_Lake_logo.svg.png",
-            "San Jose": "https://upload.wikimedia.org/wikipedia/en/thumb/2/21/San_Jose_Earthquakes_logo_2014.svg/512px-San_Jose_Earthquakes_logo_2014.svg.png",
-            "Seattle": "https://upload.wikimedia.org/wikipedia/en/thumb/d/d4/Seattle_Sounders_FC_logo_2023.svg/512px-Seattle_Sounders_FC_logo_2023.svg.png",
-            "St. Louis": "https://upload.wikimedia.org/wikipedia/en/thumb/b/b3/St._Louis_City_SC_logo.svg/512px-St._Louis_City_SC_logo.svg.png",
-            "Toronto": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a3/Toronto_FC_logo.svg/512px-Toronto_FC_logo.svg.png",
-            "Vancouver": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a2/Vancouver_Whitecaps_FC_logo.svg/512px-Vancouver_Whitecaps_FC_logo.svg.png",
-            "San Diego FC": "https://upload.wikimedia.org/wikipedia/en/thumb/c/ca/San_Diego_FC_logo.svg/512px-San_Diego_FC_logo.svg.png"
-        };
-
-        function getLogo(teamName) {
-            if (!teamName) return "";
-            for (let key in TEAM_LOGOS) {
-                if (teamName.toLowerCase().includes(key.toLowerCase())) return TEAM_LOGOS[key];
-            }
-            return "https://via.placeholder.com/20";
+        function getLogo(name) {
+            const s = (name || "").toLowerCase();
+            for (let key in LOGO_DB) if (s.includes(key)) return LOGO_DB[key];
+            return "https://via.placeholder.com/40?text=FC";
         }
-
-        const EAST_TEAMS = ["Inter Miami", "Columbus", "NY City", "NYCFC", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "NY Red Bulls", "Toronto", "Montreal", "DC United", "Atlanta"];
-        const WEST_TEAMS = ["Seattle", "San Diego FC", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "Los Angeles", "LAFC", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St. Louis", "Real Salt Lake"];
 
         let players = {}, standings = [];
 
         async function init() {
             const fetchCsv = (url) => new Promise(res => Papa.parse(url, { download: true, header: true, skipEmptyLines: true, complete: d => res(d.data) }));
-            const [gData, aData, cData, rData, sData, hData] = await Promise.all([
-                fetchCsv(URLS.goals), fetchCsv(URLS.assists), fetchCsv(URLS.cleans), fetchCsv(URLS.ratings), fetchCsv(URLS.standings), fetchCsv(URLS.history)
-            ]);
+            const [g, a, c, r, s, h] = await Promise.all([fetchCsv(URLS.goals), fetchCsv(URLS.assists), fetchCsv(URLS.cleans), fetchCsv(URLS.ratings), fetchCsv(URLS.standings), fetchCsv(URLS.history)]);
 
-            standings = sData;
-
-            const getPlayer = (name, team) => {
-                const n = name.trim();
-                if (!players[n]) players[n] = { name: n, team: team || 'Free Agent', goals: 0, assists: 0, cleans: 0, rating: 0, played: 0, history: [] };
+            standings = s;
+            const getP = (name, team) => {
+                const n = (name || "").trim();
+                if(!n) return null;
+                if(!players[n]) players[n] = { name: n, team: team || 'Unknown', goals: 0, assists: 0, cleans: 0, rating: 0, played: 0, history: [] };
                 return players[n];
             };
 
-            // Process all sheets to build player objects
-            gData.forEach(row => { if(row['Player Name']) getPlayer(row['Player Name'], row.Team).goals = parseInt(row.Goals) || 0; });
-            aData.forEach(row => { if(row['Player Name']) getPlayer(row['Player Name'], row.Team).assists = parseInt(row.Assists) || 0; });
-            cData.forEach(row => { if(row['Player Name']) getPlayer(row['Player Name'], row.Team).cleans = parseInt(row['Clean Sheets']) || 0; });
-            rData.forEach(row => { 
-                if(row['Player Name']) {
-                    const p = getPlayer(row['Player Name'], row.Team);
-                    p.rating = parseFloat(row['Average Rating']) || 0;
-                    p.played = row['Matches Played'] || 0;
-                }
-            });
+            g.forEach(row => { if(row['Player Name']) getP(row['Player Name'], row.Team).goals = parseInt(row.Goals) || 0; });
+            a.forEach(row => { if(row['Player Name']) getP(row['Player Name'], row.Team).assists = parseInt(row.Assists) || 0; });
+            c.forEach(row => { if(row['Player Name']) getP(row['Player Name'], row.Team).cleans = parseInt(row['Clean Sheets']) || 0; });
+            r.forEach(row => { if(row['Player Name']) { let p = getP(row['Player Name'], row.Team); p.rating = parseFloat(row['Average Rating']) || 0; p.played = row['Matches Played'] || 0; }});
 
-            // FIX: ACCUMULATE HISTORY (Handles both Wide and Long formats)
-            hData.forEach(row => {
-                const name = row['Player Name'] ? row['Player Name'].trim() : null;
-                if(name && players[name]) {
-                    // Extract match values, ignoring metadata columns
-                    let matchRatings = Object.keys(row)
-                        .filter(k => !['Player Name', 'Team', 'Average', 'Total', 'Pos', 'GP', 'MP', 'Matches', ''].includes(k))
-                        .map(k => parseFloat(row[k]))
+            h.forEach(row => {
+                let n = row['Player Name']?.trim();
+                if(n && players[n]) {
+                    // Collect all numeric values from row that aren't metadata
+                    let vals = Object.entries(row)
+                        .filter(([k, v]) => !['Player Name', 'Team', 'Average', 'Total', 'GP', 'MP', 'Pos'].includes(k))
+                        .map(([k, v]) => parseFloat(v))
                         .filter(v => !isNaN(v) && v > 0);
-                    
-                    players[name].history.push(...matchRatings);
+                    players[n].history.push(...vals);
                 }
             });
 
-            // Clean up history (take last 10, then reverse for Latest First)
-            Object.values(players).forEach(p => {
-                p.history = p.history.slice(-10).reverse();
-            });
-
+            Object.values(players).forEach(p => { p.history = p.history.slice(-10).reverse(); });
             document.getElementById('loading').style.display = 'none';
             render();
         }
 
         function render() {
-            const renderTbl = (id, list) => {
-                const data = standings.filter(s => s.Team && list.some(n => s.Team.toLowerCase().includes(n.toLowerCase()))).sort((a,b) => b.PTS - a.PTS);
-                document.getElementById(id).innerHTML = `
-                    <thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead>
-                    <tbody>${data.map((r, i) => `<tr class="clickable" onclick="openTeam('${r.Team}')">
-                        <td class="text-zinc-600 font-bold">${i+1}</td>
-                        <td class="font-bold flex items-center gap-3"><img src="${getLogo(r.Team)}" class="team-logo">${r.Team}</td>
-                        <td>${r.GD}</td><td class="font-black text-[#00ff85]">${r.PTS}</td>
-                    </tr>`).join('')}</tbody>`;
+            const EAST_LIST = ["Miami", "Columbus", "NY City", "NYCFC", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "England", "Chicago", "Red Bulls", "Toronto", "Montreal", "D.C.", "Atlanta"];
+            const WEST_LIST = ["Seattle", "Diego", "Colorado", "Salt Lake", "Minnesota", "San Jose", "Galaxy", "Los Angeles", "LAFC", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Sporting", "Louis"];
+
+            const drawTbl = (id, list) => {
+                const data = standings.filter(s => s.Team && list.some(n => s.Team.includes(n))).sort((a,b) => b.PTS - a.PTS);
+                document.getElementById(id).innerHTML = `<thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead><tbody>${data.map((r, i) => `<tr class="clickable" onclick="openTeam('${r.Team}')"><td>${i+1}</td><td class="font-bold flex items-center gap-2"><img src="${getLogo(r.Team)}" class="team-logo-img">${r.Team}</td><td>${r.GD}</td><td class="text-[#00ff85] font-black">${r.PTS}</td></tr>`).join('')}</tbody>`;
             };
-            renderTbl('table-eastern', EAST_TEAMS);
-            renderTbl('table-western', WEST_TEAMS);
+            drawTbl('table-eastern', EAST_LIST);
+            drawTbl('table-western', WEST_LIST);
 
             const drawLeaders = (id, key) => {
                 const list = Object.values(players).sort((a,b) => b[key] - a[key]).slice(0, 15);
-                document.getElementById(id).innerHTML = list.map((p, i) => `
-                    <div class="p-4 flex justify-between items-center text-xs clickable hover:bg-zinc-800" onclick="openPlayer('${p.name}')">
-                        <div class="flex items-center gap-3">
-                            <span class="text-[10px] text-zinc-700 font-black">#${i+1}</span>
-                            <div>
-                                <div class="font-bold text-white">${p.name}</div>
-                                <div class="text-[9px] text-zinc-600 uppercase font-black flex items-center gap-1">
-                                    <img src="${getLogo(p.team)}" class="w-3 h-3 grayscale"> ${p.team}
-                                </div>
-                            </div>
-                        </div>
-                        <span class="badge">${key === 'rating' ? p[key].toFixed(2) : p[key]}</span>
-                    </div>`).join('');
+                document.getElementById(id).innerHTML = list.map((p, i) => `<div class="p-4 flex justify-between items-center text-xs clickable hover:bg-zinc-800" onclick="openPlayer('${p.name}')"><div class="flex items-center gap-3"><span class="text-zinc-700 font-black">#${i+1}</span><div><div class="font-bold">${p.name}</div><div class="text-[9px] text-zinc-600 uppercase flex items-center gap-1"><img src="${getLogo(p.team)}" class="w-3 h-3 grayscale"> ${p.team}</div></div></div><span class="badge">${key === 'rating' ? p[key].toFixed(2) : p[key]}</span></div>`).join('');
             };
             drawLeaders('list-goals', 'goals'); drawLeaders('list-assists', 'assists'); drawLeaders('list-ratings', 'rating'); drawLeaders('list-cleans', 'cleans');
         }
@@ -227,36 +184,33 @@
             const p = players[name];
             document.getElementById('mainModal').style.display = 'block';
             document.getElementById('searchResults').classList.add('hidden');
-            
-            const historyHtml = p.history.length > 0 ? `
-                <div class="mt-8">
-                    <div class="flex justify-between items-end mb-4">
-                        <h3 class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Recent Performance</h3>
-                        <span class="text-[9px] text-zinc-700 font-bold uppercase">← LATEST</span>
-                    </div>
-                    <div class="flex gap-2 flex-wrap">
-                        ${p.history.map(rtg => {
-                            let c = rtg >= 7.5 ? 'rating-high' : (rtg >= 6.5 ? 'rating-mid' : 'rating-low');
-                            return `<div class="rating-box ${c}">${rtg.toFixed(1)}</div>`;
-                        }).join('')}
-                    </div>
-                </div>
-            ` : `<div class="mt-10 text-zinc-700 text-[10px] font-black uppercase text-center border-t border-zinc-900 pt-10">No match data found for ${p.name}</div>`;
-
             document.getElementById('modalContent').innerHTML = `
                 <div class="text-center mb-8 relative">
                     <img src="${getLogo(p.team)}" class="absolute inset-0 m-auto w-32 h-32 opacity-10 grayscale pointer-events-none">
                     <h2 class="text-4xl font-black italic text-white relative z-10">${p.name}</h2>
-                    <p class="text-[#00ff85] font-black uppercase text-xs tracking-widest relative z-10">${p.team}</p>
+                    <p class="text-[#00ff85] font-black text-xs tracking-widest relative z-10 uppercase">${p.team}</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Avg Rating</div><div class="text-3xl font-black text-[#00ff85]">${p.rating.toFixed(2)}</div></div>
-                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">GP</div><div class="text-3xl font-black">${p.played}</div></div>
-                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Goals</div><div class="text-3xl font-black">${p.goals}</div></div>
-                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 uppercase font-black mb-1">Assists</div><div class="text-3xl font-black">${p.assists}</div></div>
+                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 font-black mb-1 uppercase">Avg Rating</div><div class="text-3xl font-black text-[#00ff85]">${p.rating.toFixed(2)}</div></div>
+                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 font-black mb-1 uppercase">GP</div><div class="text-3xl font-black">${p.played}</div></div>
+                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 font-black mb-1 uppercase">Goals</div><div class="text-3xl font-black">${p.goals}</div></div>
+                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 font-black mb-1 uppercase">Assists</div><div class="text-3xl font-black">${p.assists}</div></div>
                 </div>
-                ${historyHtml}
-            `;
+                <div class="mt-8">
+                    <div class="flex justify-between items-end mb-4"><h3 class="text-[10px] font-black text-zinc-500 uppercase">Match History</h3><span class="text-[9px] text-zinc-700 font-bold uppercase">← Latest First</span></div>
+                    <div class="flex gap-2 flex-wrap">${p.history.length ? p.history.map(r => `<div class="rating-box ${r >= 7.5 ? 'rating-high' : (r >= 6.5 ? 'rating-mid' : 'rating-low')}">${r.toFixed(1)}</div>`).join('') : '<div class="text-zinc-700 text-[10px] font-bold">NO MATCH DATA RECORDED</div>'}</div>
+                </div>`;
+        }
+
+        function openTeam(name) {
+            const roster = Object.values(players).filter(p => name.toLowerCase().includes(p.team.toLowerCase().split(' ')[0]));
+            document.getElementById('mainModal').style.display = 'block';
+            document.getElementById('modalContent').innerHTML = `
+                <div class="flex items-center gap-4 mb-8"><img src="${getLogo(name)}" class="w-16 h-16 object-contain"><h1 class="text-4xl font-black italic text-[#00ff85] uppercase">${name}</h1></div>
+                <div class="card divide-y divide-zinc-800">
+                    <div class="p-3 grid grid-cols-4 text-[9px] font-black text-zinc-600 uppercase"><div>Player</div><div>G</div><div>A</div><div>RTG</div></div>
+                    ${roster.sort((a,b) => b.rating - a.rating).map(p => `<div onclick="openPlayer('${p.name}')" class="p-4 grid grid-cols-4 items-center text-xs hover:bg-zinc-800 cursor-pointer"><div class="font-bold truncate">${p.name}</div><div>${p.goals}</div><div>${p.assists}</div><div class="text-[#00ff85] font-black">${p.rating.toFixed(2)}</div></div>`).join('')}
+                </div>`;
         }
 
         function handleSearch() {
@@ -267,29 +221,8 @@
             const tMatch = standings.filter(s => s.Team && s.Team.toLowerCase().includes(q)).slice(0, 3);
             res.classList.remove('hidden');
             res.innerHTML = `
-                ${tMatch.map(t => `<div onclick="openTeam('${t.Team}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-[10px] font-black text-[#00ff85] uppercase flex items-center gap-2">
-                    <img src="${getLogo(t.Team)}" class="w-4 h-4"> Team: ${t.Team}
-                </div>`).join('')}
-                ${pMatch.map(p => `<div onclick="openPlayer('${p.name}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-xs font-bold border-t border-zinc-900 flex items-center gap-2">
-                    <img src="${getLogo(p.team)}" class="w-4 h-4 grayscale"> ${p.name} (${p.team})
-                </div>`).join('')}
-            `;
-        }
-
-        function openTeam(name) {
-            const roster = Object.values(players).filter(p => p.team && name.toLowerCase().includes(p.team.toLowerCase().split(' ')[0]));
-            document.getElementById('mainModal').style.display = 'block';
-            document.getElementById('modalContent').innerHTML = `
-                <div class="flex items-center gap-4 mb-8">
-                    <img src="${getLogo(name)}" class="w-16 h-16 object-contain">
-                    <h1 class="text-4xl font-black italic text-[#00ff85]">${name}</h1>
-                </div>
-                <div class="card divide-y divide-zinc-800">
-                    <div class="p-3 grid grid-cols-4 text-[9px] font-black text-zinc-600 uppercase"><div>Player</div><div>G</div><div>A</div><div>RTG</div></div>
-                    ${roster.sort((a,b) => b.rating - a.rating).map(p => `<div onclick="openPlayer('${p.name}')" class="p-4 grid grid-cols-4 items-center text-xs hover:bg-zinc-800 cursor-pointer">
-                        <div class="font-bold truncate">${p.name}</div><div>${p.goals}</div><div>${p.assists}</div><div class="text-[#00ff85] font-black">${p.rating.toFixed(2)}</div>
-                    </div>`).join('')}
-                </div>`;
+                ${tMatch.map(t => `<div onclick="openTeam('${t.Team}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-[10px] font-black text-[#00ff85] uppercase flex items-center gap-2"><img src="${getLogo(t.Team)}" class="w-4 h-4"> ${t.Team}</div>`).join('')}
+                ${pMatch.map(p => `<div onclick="openPlayer('${p.name}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-xs font-bold border-t border-zinc-900 flex items-center gap-2"><img src="${getLogo(p.team)}" class="w-4 h-4 grayscale"> ${p.name}</div>`).join('')}`;
         }
 
         function showTab(t) {
@@ -298,7 +231,6 @@
             document.getElementById('btn-standings').classList.toggle('active', t === 'standings');
             document.getElementById('btn-leaders').classList.toggle('active', t === 'leaders');
         }
-
         function closeModal() { document.getElementById('mainModal').style.display = 'none'; }
         init();
     </script>
