@@ -188,18 +188,28 @@
             c.forEach(row => { if(row['Player Name']) getP(row['Player Name'], row.Team).cleans = parseInt(row['Clean Sheets']) || 0; });
             r.forEach(row => { if(row['Player Name']) { let p = getP(row['Player Name'], row.Team); p.rating = parseFloat(row['Average Rating']) || 0; p.played = row['Matches Played'] || 0; }});
 
+            // FIXED HISTORY PARSING
             h.forEach(row => {
                 let n = row['Player Name']?.trim();
                 let t = normalizeTeam(row.Team);
                 let id = `${n}_${t}`.toLowerCase();
                 if(n && players[id]) {
-                    let vals = Object.entries(row).filter(([k, v]) => !['Player Name', 'Team', 'Average', 'Total', 'GP', 'MP', 'Pos'].includes(k))
-                        .map(([k, v]) => parseFloat(v)).filter(v => !isNaN(v) && v > 0);
-                    players[id].history = vals;
+                    // Extract all numeric ratings from columns that aren't metadata
+                    let vals = Object.entries(row)
+                        .filter(([k, v]) => !['Player Name', 'Team', 'Average', 'Total', 'GP', 'MP', 'Pos'].includes(k))
+                        .map(([k, v]) => parseFloat(v))
+                        .filter(v => !isNaN(v) && v > 0);
+                    
+                    // We append found ratings to existing history for that unique ID
+                    players[id].history.push(...vals);
                 }
             });
 
-            Object.values(players).forEach(p => { p.history = p.history.slice(-10).reverse(); });
+            // Sort history to most recent and limit to last 10
+            Object.values(players).forEach(p => { 
+                p.history = p.history.slice(-10).reverse(); 
+            });
+
             document.getElementById('loading').style.display = 'none';
             render();
         }
@@ -253,7 +263,7 @@
                     <div><img src="${getLogo(p2.team)}" class="w-12 h-12 mx-auto mb-2"><h4 class="text-lg font-black uppercase">${p2.name}</h4><p class="text-[9px] text-zinc-500">${p2.team}</p></div>
                 </div>
                 <div class="card divide-y divide-zinc-800">
-                    ${[['Rating', p1.rating, p2.rating],['GP', p1.played, p2.played],['Goals', p1.goals, p2.goals],['Assists', p1.assists, p2.assists],['Cleans', p1.cleans, p2.cleans]].map(row => `
+                    ${[['Rating', p1.rating.toFixed(2), p2.rating.toFixed(2)],['GP', p1.played, p2.played],['Goals', p1.goals, p2.goals],['Assists', p1.assists, p2.assists],['Cleans', p1.cleans, p2.cleans]].map(row => `
                         <div class="grid grid-cols-3 p-4 items-center text-xs">
                             <div class="${highlight(parseFloat(row[1]), parseFloat(row[2]))} text-left text-sm">${row[1]}</div>
                             <div class="text-[9px] text-zinc-600 uppercase font-black text-center">${row[0]}</div>
@@ -273,7 +283,12 @@
                     <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 font-black mb-1 uppercase">Goals</div><div class="text-3xl font-black">${p.goals}</div></div>
                     <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 font-black mb-1 uppercase">Assists</div><div class="text-3xl font-black">${p.assists}</div></div>
                 </div>
-                <div class="mt-8"><div class="flex justify-between items-end mb-4"><h3 class="text-[10px] font-black text-zinc-500 uppercase">Match History</h3></div><div class="flex gap-2 flex-wrap">${p.history.length ? p.history.map(r => `<div class="rating-box ${r >= 7.5 ? 'rating-high' : (r >= 6.5 ? 'rating-mid' : 'rating-low')}">${r.toFixed(1)}</div>`).join('') : '<span class="text-zinc-700 text-[10px]">No Data</span>'}</div></div>`;
+                <div class="mt-8">
+                    <div class="flex justify-between items-end mb-4"><h3 class="text-[10px] font-black text-zinc-500 uppercase">Match History (Last 10)</h3></div>
+                    <div class="flex gap-2 flex-wrap">
+                        ${p.history.length ? p.history.map(r => `<div class="rating-box ${r >= 7.5 ? 'rating-high' : (r >= 6.5 ? 'rating-mid' : 'rating-low')}">${r.toFixed(1)}</div>`).join('') : '<span class="text-zinc-700 text-[10px]">No recent ratings available</span>'}
+                    </div>
+                </div>`;
         }
 
         function openTeam(name) {
