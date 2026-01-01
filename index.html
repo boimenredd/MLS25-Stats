@@ -77,29 +77,71 @@
     </div>
 
     <script>
-        // We will update these with your "Updated Logos" soon
         const LOGO_DB = {
-            "atlanta": "https://images.mlssoccer.com/image/upload/v1593358362/assets/atl/logos/ATL_United_Secondary_Logo_Gold_1.png",
-            "miami": "https://images.mlssoccer.com/image/upload/v1593358362/assets/mia/logos/Inter_Miami_CF_Logo.png",
-            "galaxy": "https://images.mlssoccer.com/image/upload/v1593358362/assets/la/logos/LA_Galaxy_Logo.png",
-            "los angeles": "https://images.mlssoccer.com/image/upload/v1593358362/assets/lafc/logos/LAFC_Logo.png",
-            "ny city": "https://images.mlssoccer.com/image/upload/v1593358362/assets/nyc/logos/NYCFC_Logo.png"
+            "atlanta": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747499879/assets/logos/mls-clubs/Club_Logo-Atlanta_jtk7ku.png",
+            "austin": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747499975/assets/logos/mls-clubs/Club_Logo-Austin_pa9xtu.png",
+            "charlotte": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500045/assets/logos/mls-clubs/Club_Logo-Charlotte_p7sznf.png",
+            "chicago": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500178/assets/logos/mls-clubs/Club_Logo-Chicago_jm2yev.png",
+            "cincinnati": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500249/assets/logos/mls-clubs/Club_Logo-Cincinnati_jwgkps.png",
+            "cincy": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500249/assets/logos/mls-clubs/Club_Logo-Cincinnati_jwgkps.png",
+            "colorado": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500322/assets/logos/mls-clubs/Club_Logo-Colorado_n5kpss.png",
+            "columbus": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500414/assets/logos/mls-clubs/Club_Logo-Columbus_light_z3eq8l.png",
+            "d.c.": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500504/assets/logos/mls-clubs/Club_Logo-D.C_t03ekm.png",
+            "dc united": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500504/assets/logos/mls-clubs/Club_Logo-D.C_t03ekm.png",
+            "dallas": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500567/assets/logos/mls-clubs/Club_Logo-Dallas_sysmtj.png",
+            "houston": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500939/assets/logos/mls-clubs/Club_Logo-Houston_oifm77.png",
+            "kansas city": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747754918/assets/logos/mls-clubs/Club_Logo-Kansas_City_cnhd75.png",
+            "sporting": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747754918/assets/logos/mls-clubs/Club_Logo-Kansas_City_cnhd75.png",
+            "galaxy": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747755165/assets/logos/mls-clubs/Club_Logo-LA_Galaxy_fg0wjp.png",
+            "lafc": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747755309/assets/logos/mls-clubs/Club_Logo-LAFC_djrhru.png",
+            "miami": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747755405/assets/logos/mls-clubs/Club_Logo-Miami_tyqe64.png",
+            "minnesota": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747754826/assets/logos/mls-clubs/Club_Logo-Minnesota_ftweor.png",
+            "montreal": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747755806/assets/logos/mls-clubs/Club_Logo-Montreal_beeqnh.png",
+            "nashville": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747755999/assets/logos/mls-clubs/Club_Logo-Nashville_rb9vwu.png",
+            "new england": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1766020750/assets/NE_Logo_PRI_FC_RGB_480x480_fdx2us.png",
+            "england": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1766020750/assets/NE_Logo_PRI_FC_RGB_480x480_fdx2us.png",
+            "red bulls": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747771783/assets/logos/mls-clubs/Club_Logo-RBNY_dwawvt.png",
+            "nyrb": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747771783/assets/logos/mls-clubs/Club_Logo-RBNY_dwawvt.png",
+            "nycfc": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747756306/assets/logos/mls-clubs/Club_Logo-New_York_City_xu6vax.png",
+            "ny city": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747756306/assets/logos/mls-clubs/Club_Logo-New_York_City_xu6vax.png",
+            "orlando": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747769281/assets/logos/mls-clubs/Club_Logo-Orlando_ryyn7a.png",
+            "philadelphia": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747769446/assets/logos/mls-clubs/Club_Logo-Philadelphia_im7pqg.png",
+            "philly": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747769446/assets/logos/mls-clubs/Club_Logo-Philadelphia_im7pqg.png",
+            "portland": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747769540/assets/logos/mls-clubs/Club_Logo-Portland_qihpaz.png",
+            "salt lake": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747776403/assets/logos/mls-clubs/Club_Logo-Salt_Lake_City_hpvde5.png",
+            "san diego": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1748261519/assets/logos/mls-clubs/Club_Logo-San_Diego_nwpyul.png",
+            "diego": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1748261519/assets/logos/mls-clubs/Club_Logo-San_Diego_nwpyul.png",
+            "san jose": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1748262048/assets/logos/mls-clubs/Club_Logo-San_Jose_opzlmo.png",
+            "seattle": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1748265125/assets/logos/mls-clubs/Club_Logo-Seattle_e6jk2x.png",
+            "st louis": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747771858/assets/logos/mls-clubs/Club_Logo-Saint_Louis_guz12c.png",
+            "louis": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747771858/assets/logos/mls-clubs/Club_Logo-Saint_Louis_guz12c.png",
+            "toronto": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1748265251/assets/logos/mls-clubs/Club_Logo-Toronto_vz6hao.png",
+            "vancouver": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1748265547/assets/logos/mls-clubs/Club_Logo-Vancouver_ao9phl.png"
         };
 
-        // NEW: Team Normalization Map
         const TEAM_ALIASES = {
             "atlanta": "Atlanta United",
             "atlanta united": "Atlanta United",
             "nyc": "NYCFC",
             "ny city": "NYCFC",
             "nycfc": "NYCFC",
-            "la": "LA Galaxy",
+            "la galaxy": "LA Galaxy",
             "galaxy": "LA Galaxy",
             "lafc": "LAFC",
             "los angeles": "LAFC",
             "new england": "New England Revolution",
+            "england": "New England Revolution",
             "st louis": "St. Louis City",
-            "st. louis": "St. Louis City"
+            "st. louis": "St. Louis City",
+            "louis": "St. Louis City",
+            "cincy": "FC Cincinnati",
+            "cincinnati": "FC Cincinnati",
+            "philly": "Philadelphia Union",
+            "philadelphia": "Philadelphia Union",
+            "nyrb": "NY Red Bulls",
+            "red bulls": "NY Red Bulls",
+            "kansas city": "Sporting KC",
+            "sporting": "Sporting KC"
         };
 
         const URLS = {
@@ -117,11 +159,14 @@
             for (let key in TEAM_ALIASES) {
                 if (s.includes(key)) return TEAM_ALIASES[key];
             }
-            return name; // Return original if no alias found
+            return name;
         }
 
         function getLogo(name) {
             const s = (name || "").toLowerCase();
+            // Exact match priority
+            if (LOGO_DB[s]) return LOGO_DB[s];
+            // Partial match fallback
             for (let key in LOGO_DB) if (s.includes(key)) return LOGO_DB[key];
             return "https://via.placeholder.com/40?text=FC";
         }
@@ -142,7 +187,6 @@
                 return players[n];
             };
 
-            // Link all data points to normalized team names
             g.forEach(row => { if(row['Player Name']) getP(row['Player Name'], row.Team).goals = parseInt(row.Goals) || 0; });
             a.forEach(row => { if(row['Player Name']) getP(row['Player Name'], row.Team).assists = parseInt(row.Assists) || 0; });
             c.forEach(row => { if(row['Player Name']) getP(row['Player Name'], row.Team).cleans = parseInt(row['Clean Sheets']) || 0; });
@@ -165,13 +209,13 @@
         }
 
         function render() {
-            const EAST_LIST = ["Miami", "Columbus", "NYCFC", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "Red Bulls", "Toronto", "Montreal", "D.C.", "Atlanta United"];
-            const WEST_LIST = ["Seattle", "San Diego", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "LAFC", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Sporting", "St. Louis"];
+            const EAST_LIST = ["Inter Miami CF", "Columbus Crew", "NYCFC", "FC Cincinnati", "Philadelphia Union", "Charlotte FC", "Orlando City SC", "Nashville SC", "New England Revolution", "Chicago Fire FC", "NY Red Bulls", "Toronto FC", "CF Montreal", "D.C. United", "Atlanta United"];
+            const WEST_LIST = ["Seattle Sounders FC", "San Diego FC", "Colorado Rapids", "Real Salt Lake", "Minnesota United FC", "San Jose Earthquakes", "LA Galaxy", "LAFC", "Portland Timbers", "Vancouver Whitecaps FC", "Houston Dynamo FC", "Austin FC", "FC Dallas", "Sporting KC", "St. Louis City"];
 
             const drawTbl = (id, list) => {
                 const data = standingsRaw.filter(s => {
                     const norm = normalizeTeam(s.Team);
-                    return list.includes(norm);
+                    return list.some(l => l.includes(norm) || norm.includes(l));
                 }).sort((a,b) => b.PTS - a.PTS);
 
                 document.getElementById(id).innerHTML = `<thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead><tbody>${data.map((r, i) => `
@@ -203,7 +247,6 @@
             drawLeaders('list-goals', 'goals'); drawLeaders('list-assists', 'assists'); drawLeaders('list-ratings', 'rating'); drawLeaders('list-cleans', 'cleans');
         }
 
-        // Functions for Modal and Team View remain same but use normalized names
         function openPlayer(name) {
             const p = players[name];
             document.getElementById('mainModal').style.display = 'block';
@@ -230,7 +273,7 @@
             const roster = Object.values(players).filter(p => normalizeTeam(p.team) === normalizeTeam(name));
             document.getElementById('mainModal').style.display = 'block';
             document.getElementById('modalContent').innerHTML = `
-                <div class="flex items-center gap-4 mb-8"><img src="${getLogo(name)}" class="w-16 h-16 object-contain"><h1 class="text-4xl font-black italic text-[#00ff85] uppercase">${name}</h1></div>
+                <div class="flex items-center gap-4 mb-8"><img src="${getLogo(name)}" class="w-16 h-16 object-contain"><h1 class="text-4xl font-black italic text-[#00ff85] uppercase">${normalizeTeam(name)}</h1></div>
                 <div class="card divide-y divide-zinc-800">
                     <div class="p-3 grid grid-cols-4 text-[9px] font-black text-zinc-600 uppercase"><div>Player</div><div>G</div><div>A</div><div>RTG</div></div>
                     ${roster.sort((a,b) => b.rating - a.rating).map(p => `<div onclick="openPlayer('${p.name}')" class="p-4 grid grid-cols-4 items-center text-xs hover:bg-zinc-800 cursor-pointer"><div class="font-bold truncate">${p.name}</div><div>${p.goals}</div><div>${p.assists}</div><div class="text-[#00ff85] font-black">${p.rating.toFixed(2)}</div></div>`).join('')}
@@ -260,4 +303,3 @@
     </script>
 </body>
 </html>
-
