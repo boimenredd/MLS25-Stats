@@ -134,7 +134,6 @@
             if (!name) return "Unknown";
             let s = name.toLowerCase().trim();
             
-            // Comprehensive Mapping
             if (s.includes("cincinnati")) return "Cincinnati";
             if (s.includes("montreal")) return "Montreal";
             if (s.includes("nycfc") || s.includes("new york city")) return "Nycfc";
@@ -152,7 +151,7 @@
             if (s.includes("jose") || s.includes("earthquakes") || s === "sj") return "San Jose";
             if (s.includes("red bull") || s.includes("nyrb") || s.includes("rbny")) return "Red Bulls";
             if (s.includes("kansas") || s.includes("sporting")) return "Kansas City";
-            if (s.includes("lafc")) return "LAFC";
+            if (s.includes("lafc") || s.includes("los angeles fc")) return "LAFC";
             if (s.includes("galaxy")) return "LA Galaxy";
             if (s.includes("new england") || s.includes("revolution")) return "New England";
             if (s.includes("st louis") || s.includes("st. louis")) return "St Louis";
@@ -161,7 +160,6 @@
             if (s.includes("miami") || s.includes("heron")) return "Miami";
             if (s.includes("dc united") || s.includes("d.c.") || s === "dc") return "D.C.";
             
-            // Fallback cleaning
             let clean = s.replace(/\s(fc|sc|united|city|cf|mls|city sc|city fc|united fc|football club)$/g, '').trim();
             return clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
@@ -209,12 +207,10 @@
         }
 
         function render() {
-            // Updated Full Lists (15 teams per conference)
             const EAST_LIST = ["Miami", "Columbus", "Nycfc", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "Red Bulls", "Toronto", "Montreal", "D.C.", "Atlanta"];
             const WEST_LIST = ["Seattle", "San Diego", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "LAFC", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St Louis"];
 
             const drawTbl = (id, list) => {
-                // Filter and merge duplicates (e.g. if "Seattle" and "Sounders" both exist in standings sheet)
                 const teamMap = new Map();
                 standingsRaw.forEach(row => {
                     const norm = normalizeTeam(row.Team);
