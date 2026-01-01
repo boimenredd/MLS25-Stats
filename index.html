@@ -136,6 +136,10 @@
                 .replace(/\./g, '')
                 .replace(/\s(fc|sc|united|city|cf|mls|city sc|city fc|united fc|football club)$/g, '')
                 .trim();
+            
+            // Critical Fix: Map Earthquakes/SJ variations to San Jose
+            if (s.includes("jose") || s.includes("earthquakes") || s === "sj") return "San Jose";
+            
             if (s.includes("red bull") || s.includes("nyrb") || s.includes("rbny")) return "Red Bulls";
             if (s.includes("kansas") || s.includes("sporting")) return "Kansas City";
             if (s.includes("lafc")) return "LAFC";
@@ -144,10 +148,11 @@
             if (s.includes("new england")) return "New England";
             if (s.includes("st louis")) return "St Louis";
             if (s.includes("diego")) return "San Diego";
-            if (s.includes("jose")) return "San Jose";
             if (s.includes("dc")) return "D.C.";
             if (s.includes("miami")) return "Miami";
-            return s.charAt(0).toUpperCase() + s.slice(1);
+            
+            // Title case for others
+            return s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
 
         function getLogo(name) {
@@ -193,10 +198,12 @@
         }
 
         function render() {
-            const EAST_LIST = ["Miami", "Columbus", "NYCFC", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "Red Bulls", "Toronto", "Montreal", "D.C.", "Atlanta"];
+            // These names must match the output of normalizeTeam exactly
+            const EAST_LIST = ["Miami", "Columbus", "Nycfc", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "Red Bulls", "Toronto", "Montreal", "D.C.", "Atlanta"];
             const WEST_LIST = ["Seattle", "San Diego", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "LAFC", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St Louis"];
 
             const drawTbl = (id, list) => {
+                // Filter and ensure we only show teams explicitly in our conference lists
                 const data = standingsRaw.filter(s => list.includes(normalizeTeam(s.Team))).sort((a,b) => b.PTS - a.PTS);
                 document.getElementById(id).innerHTML = `<thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead><tbody>${data.map((r, i) => `
                     <tr class="clickable" onclick="openTeam('${normalizeTeam(r.Team)}')">
@@ -250,7 +257,6 @@
         function openComparison(n1, n2) {
             const p1 = players[n1], p2 = players[n2];
             document.getElementById('mainModal').style.display = 'block';
-            
             const highlight = (v1, v2) => v1 > v2 ? 'text-[#00ff85] font-black' : (v2 > v1 ? 'text-zinc-600' : 'text-white');
 
             document.getElementById('modalContent').innerHTML = `
@@ -266,32 +272,13 @@
                         <p class="text-[9px] text-zinc-500 uppercase font-black">${p2.team}</p>
                     </div>
                 </div>
-
                 <div class="card divide-y divide-zinc-800">
-                    ${[
-                        ['Rating', p1.rating.toFixed(2), p2.rating.toFixed(2)],
-                        ['Played', p1.played, p2.played],
-                        ['Goals', p1.goals, p2.goals],
-                        ['Assists', p1.assists, p2.assists],
-                        ['Cleans', p1.cleans, p2.cleans]
-                    ].map(row => `
+                    ${[['Rating', p1.rating.toFixed(2), p2.rating.toFixed(2)],['Played', p1.played, p2.played],['Goals', p1.goals, p2.goals],['Assists', p1.assists, p2.assists],['Cleans', p1.cleans, p2.cleans]].map(row => `
                         <div class="grid grid-cols-3 p-4 items-center text-xs">
                             <div class="${highlight(parseFloat(row[1]), parseFloat(row[2]))} text-left text-sm">${row[1]}</div>
                             <div class="text-[9px] text-zinc-600 uppercase font-black text-center">${row[0]}</div>
                             <div class="${highlight(parseFloat(row[2]), parseFloat(row[1]))} text-right text-sm">${row[2]}</div>
                         </div>`).join('')}
-                </div>
-
-                <div class="mt-8">
-                    <h3 class="text-[9px] font-black text-zinc-500 uppercase mb-4 text-center">Recent Form Matchup</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="flex flex-col gap-1 items-center">
-                            ${p1.history.slice(0,5).map(r => `<div class="rating-box ${r >= 7.5 ? 'rating-high' : (r >= 6.5 ? 'rating-mid' : 'rating-low')} w-full">${r.toFixed(1)}</div>`).join('')}
-                        </div>
-                        <div class="flex flex-col gap-1 items-center">
-                            ${p2.history.slice(0,5).map(r => `<div class="rating-box ${r >= 7.5 ? 'rating-high' : (r >= 6.5 ? 'rating-mid' : 'rating-low')} w-full">${r.toFixed(1)}</div>`).join('')}
-                        </div>
-                    </div>
                 </div>`;
         }
 
