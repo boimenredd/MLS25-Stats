@@ -137,6 +137,8 @@
             // Comprehensive Mapping
             if (s.includes("cincinnati")) return "Cincinnati";
             if (s.includes("montreal")) return "Montreal";
+            if (s.includes("nycfc") || s.includes("new york city")) return "Nycfc";
+            if (s.includes("minnesota")) return "Minnesota";
             if (s.includes("seattle") || s.includes("sounders")) return "Seattle";
             if (s.includes("colorado") || s.includes("rapids")) return "Colorado";
             if (s.includes("salt lake") || s.includes("rsl")) return "Salt Lake";
@@ -159,7 +161,7 @@
             if (s.includes("miami") || s.includes("heron")) return "Miami";
             if (s.includes("dc united") || s.includes("d.c.") || s === "dc") return "D.C.";
             
-            // Fallback: Strip common suffixes and title case
+            // Fallback cleaning
             let clean = s.replace(/\s(fc|sc|united|city|cf|mls|city sc|city fc|united fc|football club)$/g, '').trim();
             return clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
@@ -207,15 +209,28 @@
         }
 
         function render() {
+            // Updated Full Lists (15 teams per conference)
             const EAST_LIST = ["Miami", "Columbus", "Nycfc", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "Red Bulls", "Toronto", "Montreal", "D.C.", "Atlanta"];
             const WEST_LIST = ["Seattle", "San Diego", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "LAFC", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St Louis"];
 
             const drawTbl = (id, list) => {
-                const data = standingsRaw.filter(s => list.includes(normalizeTeam(s.Team))).sort((a,b) => b.PTS - a.PTS);
+                // Filter and merge duplicates (e.g. if "Seattle" and "Sounders" both exist in standings sheet)
+                const teamMap = new Map();
+                standingsRaw.forEach(row => {
+                    const norm = normalizeTeam(row.Team);
+                    if (list.includes(norm)) {
+                        if (!teamMap.has(norm)) {
+                            teamMap.set(norm, { ...row, Team: norm, PTS: parseInt(row.PTS) || 0, GD: parseInt(row.GD) || 0 });
+                        }
+                    }
+                });
+
+                const data = Array.from(teamMap.values()).sort((a,b) => b.PTS - a.PTS);
+
                 document.getElementById(id).innerHTML = `<thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead><tbody>${data.map((r, i) => `
-                    <tr class="clickable" onclick="openTeam('${normalizeTeam(r.Team)}')">
+                    <tr class="clickable" onclick="openTeam('${r.Team}')">
                         <td>${i+1}</td>
-                        <td class="font-bold flex items-center gap-2"><img src="${getLogo(r.Team)}" class="team-logo-img">${normalizeTeam(r.Team)}</td>
+                        <td class="font-bold flex items-center gap-2"><img src="${getLogo(r.Team)}" class="team-logo-img">${r.Team}</td>
                         <td>${r.GD}</td>
                         <td class="text-[#00ff85] font-black">${r.PTS}</td>
                     </tr>`).join('')}</tbody>`;
