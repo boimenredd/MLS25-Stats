@@ -135,6 +135,8 @@
             let s = name.toLowerCase().trim();
             
             // Comprehensive Mapping
+            if (s.includes("cincinnati")) return "Cincinnati";
+            if (s.includes("montreal")) return "Montreal";
             if (s.includes("seattle") || s.includes("sounders")) return "Seattle";
             if (s.includes("colorado") || s.includes("rapids")) return "Colorado";
             if (s.includes("salt lake") || s.includes("rsl")) return "Salt Lake";
