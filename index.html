@@ -132,29 +132,34 @@
 
         function normalizeTeam(name) {
             if (!name) return "Unknown";
-            let s = name.toLowerCase().trim()
-                .replace(/\./g, '')
-                .replace(/\s(fc|sc|united|city|cf|mls|city sc|city fc|united fc|football club)$/g, '')
-                .trim();
+            let s = name.toLowerCase().trim();
             
-            // Fix San Jose
-            if (s.includes("jose") || s.includes("earthquakes") || s === "sj") return "San Jose";
-            // Fix Vancouver
+            // Comprehensive Mapping
+            if (s.includes("seattle") || s.includes("sounders")) return "Seattle";
+            if (s.includes("colorado") || s.includes("rapids")) return "Colorado";
+            if (s.includes("salt lake") || s.includes("rsl")) return "Salt Lake";
+            if (s.includes("portland") || s.includes("timbers")) return "Portland";
+            if (s.includes("houston") || s.includes("dynamo")) return "Houston";
+            if (s.includes("dallas")) return "Dallas";
+            if (s.includes("columbus") || s.includes("crew")) return "Columbus";
+            if (s.includes("chicago") || s.includes("fire")) return "Chicago";
+            if (s.includes("philadelphia") || s.includes("union")) return "Philadelphia";
             if (s.includes("vancouver") || s.includes("whitecaps")) return "Vancouver";
-            
+            if (s.includes("jose") || s.includes("earthquakes") || s === "sj") return "San Jose";
             if (s.includes("red bull") || s.includes("nyrb") || s.includes("rbny")) return "Red Bulls";
             if (s.includes("kansas") || s.includes("sporting")) return "Kansas City";
             if (s.includes("lafc")) return "LAFC";
             if (s.includes("galaxy")) return "LA Galaxy";
-            if (s.includes("atlanta")) return "Atlanta";
-            if (s.includes("new england")) return "New England";
-            if (s.includes("st louis")) return "St Louis";
+            if (s.includes("new england") || s.includes("revolution")) return "New England";
+            if (s.includes("st louis") || s.includes("st. louis")) return "St Louis";
             if (s.includes("diego")) return "San Diego";
-            if (s.includes("dc")) return "D.C.";
-            if (s.includes("miami")) return "Miami";
+            if (s.includes("atlanta")) return "Atlanta";
+            if (s.includes("miami") || s.includes("heron")) return "Miami";
+            if (s.includes("dc united") || s.includes("d.c.") || s === "dc") return "D.C.";
             
-            // Default Title Case
-            return s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            // Fallback: Strip common suffixes and title case
+            let clean = s.replace(/\s(fc|sc|united|city|cf|mls|city sc|city fc|united fc|football club)$/g, '').trim();
+            return clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         }
 
         function getLogo(name) {
@@ -200,7 +205,6 @@
         }
 
         function render() {
-            // Must match normalizeTeam exactly
             const EAST_LIST = ["Miami", "Columbus", "Nycfc", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "Red Bulls", "Toronto", "Montreal", "D.C.", "Atlanta"];
             const WEST_LIST = ["Seattle", "San Diego", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "LAFC", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St Louis"];
 
