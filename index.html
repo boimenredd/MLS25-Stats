@@ -207,16 +207,23 @@
         }
 
         function render() {
+            // Full Conference Rosters
             const EAST_LIST = ["Miami", "Columbus", "Nycfc", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "Red Bulls", "Toronto", "Montreal", "D.C.", "Atlanta"];
             const WEST_LIST = ["Seattle", "San Diego", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "LAFC", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St Louis"];
 
             const drawTbl = (id, list) => {
                 const teamMap = new Map();
+                
                 standingsRaw.forEach(row => {
                     const norm = normalizeTeam(row.Team);
+                    // Crucial: check if the normalized team name is in our conference list
                     if (list.includes(norm)) {
                         if (!teamMap.has(norm)) {
-                            teamMap.set(norm, { ...row, Team: norm, PTS: parseInt(row.PTS) || 0, GD: parseInt(row.GD) || 0 });
+                            teamMap.set(norm, { 
+                                Team: norm, 
+                                PTS: parseInt(row.PTS) || 0, 
+                                GD: parseInt(row.GD) || 0 
+                            });
                         }
                     }
                 });
