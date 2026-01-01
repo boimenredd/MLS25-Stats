@@ -86,6 +86,7 @@
     </div>
 
     <script>
+        // LOGO DATABASE
         const LOGO_DB = {
             "atlanta": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747499879/assets/logos/mls-clubs/Club_Logo-Atlanta_jtk7ku.png",
             "austin": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747499975/assets/logos/mls-clubs/Club_Logo-Austin_pa9xtu.png",
@@ -130,13 +131,15 @@
 
         let players = {}, standingsRaw = [], isCompMode = false, selectedPlayers = [];
 
+        // HEAVY DUTY NORMALIZATION
         function normalizeTeam(name) {
             if (!name) return "Unknown";
             let s = name.toLowerCase().trim();
             
+            if (s.includes("nycfc") || s.includes("new york city")) return "Nycfc";
+            if (s.includes("lafc") || s.includes("los angeles fc")) return "LAFC";
             if (s.includes("cincinnati")) return "Cincinnati";
             if (s.includes("montreal")) return "Montreal";
-            if (s.includes("nycfc") || s.includes("new york city")) return "Nycfc";
             if (s.includes("minnesota")) return "Minnesota";
             if (s.includes("seattle") || s.includes("sounders")) return "Seattle";
             if (s.includes("colorado") || s.includes("rapids")) return "Colorado";
@@ -151,7 +154,6 @@
             if (s.includes("jose") || s.includes("earthquakes") || s === "sj") return "San Jose";
             if (s.includes("red bull") || s.includes("nyrb") || s.includes("rbny")) return "Red Bulls";
             if (s.includes("kansas") || s.includes("sporting")) return "Kansas City";
-            if (s.includes("lafc") || s.includes("los angeles fc")) return "LAFC";
             if (s.includes("galaxy")) return "LA Galaxy";
             if (s.includes("new england") || s.includes("revolution")) return "New England";
             if (s.includes("st louis") || s.includes("st. louis")) return "St Louis";
@@ -207,33 +209,40 @@
         }
 
         function render() {
-            // Full Conference Rosters
+            // FIXED 15-TEAM CONFERENCES
             const EAST_LIST = ["Miami", "Columbus", "Nycfc", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "Red Bulls", "Toronto", "Montreal", "D.C.", "Atlanta"];
             const WEST_LIST = ["Seattle", "San Diego", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "LAFC", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St Louis"];
 
             const drawTbl = (id, list) => {
-                const teamMap = new Map();
+                const finalData = [];
                 
-                standingsRaw.forEach(row => {
-                    const norm = normalizeTeam(row.Team);
-                    // Crucial: check if the normalized team name is in our conference list
-                    if (list.includes(norm)) {
-                        if (!teamMap.has(norm)) {
-                            teamMap.set(norm, { 
-                                Team: norm, 
-                                PTS: parseInt(row.PTS) || 0, 
-                                GD: parseInt(row.GD) || 0 
-                            });
-                        }
+                // For every team we expect to see...
+                list.forEach(targetTeam => {
+                    // Find it in the raw data by comparing normalized names
+                    const match = standingsRaw.find(row => normalizeTeam(row.Team) === targetTeam);
+                    
+                    if (match) {
+                        finalData.push({
+                            Team: targetTeam,
+                            GD: match.GD || 0,
+                            PTS: match.PTS || 0
+                        });
+                    } else {
+                        // If not found in sheet, show 0 pts so the team doesn't disappear
+                        finalData.push({ Team: targetTeam, GD: 0, PTS: 0 });
                     }
                 });
 
-                const data = Array.from(teamMap.values()).sort((a,b) => b.PTS - a.PTS);
+                // Sort by points
+                finalData.sort((a,b) => b.PTS - a.PTS);
 
-                document.getElementById(id).innerHTML = `<thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead><tbody>${data.map((r, i) => `
+                document.getElementById(id).innerHTML = `<thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead><tbody>${finalData.map((r, i) => `
                     <tr class="clickable" onclick="openTeam('${r.Team}')">
                         <td>${i+1}</td>
-                        <td class="font-bold flex items-center gap-2"><img src="${getLogo(r.Team)}" class="team-logo-img">${r.Team}</td>
+                        <td class="font-bold flex items-center gap-2">
+                            <img src="${getLogo(r.Team)}" class="team-logo-img">
+                            ${r.Team}
+                        </td>
                         <td>${r.GD}</td>
                         <td class="text-[#00ff85] font-black">${r.PTS}</td>
                     </tr>`).join('')}</tbody>`;
@@ -242,6 +251,7 @@
             drawTbl('table-eastern', EAST_LIST);
             drawTbl('table-western', WEST_LIST);
 
+            // LEADERS
             const drawLeaders = (id, key) => {
                 const list = Object.values(players).sort((a,b) => b[key] - a[key]).slice(0, 15);
                 document.getElementById(id).innerHTML = list.map((p, i) => `
@@ -256,9 +266,13 @@
                         <span class="badge">${key === 'rating' ? p[key].toFixed(2) : p[key]}</span>
                     </div>`).join('');
             };
-            drawLeaders('list-goals', 'goals'); drawLeaders('list-assists', 'assists'); drawLeaders('list-ratings', 'rating'); drawLeaders('list-cleans', 'cleans');
+            drawLeaders('list-goals', 'goals'); 
+            drawLeaders('list-assists', 'assists'); 
+            drawLeaders('list-ratings', 'rating'); 
+            drawLeaders('list-cleans', 'cleans');
         }
 
+        // UTILITY FUNCTIONS
         function toggleCompMode() {
             isCompMode = !isCompMode;
             selectedPlayers = [];
