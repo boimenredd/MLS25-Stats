@@ -21,12 +21,14 @@
         tr.clickable:hover { background: #18181b; cursor: pointer; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 100; padding: 20px; overflow-y: auto; }
         .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #111113; border: 1px solid #222225; border-radius: 8px; z-index: 1000; max-height: 300px; overflow-y: auto; }
-        .rating-box { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; font-size: 11px; border: 1px solid rgba(255,255,255,0.05); }
-        .rating-high { background: #00ff85; color: #050505; box-shadow: 0 0 15px rgba(0,255,133,0.2); }
+        .rating-box { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-weight: 900; font-size: 10px; border: 1px solid rgba(255,255,255,0.05); }
+        .rating-high { background: #00ff85; color: #050505; }
         .rating-mid { background: #fbbf24; color: #050505; }
         .rating-low { background: #ef4444; color: #ffffff; }
         .loading-overlay { position: fixed; inset: 0; background: #050505; display: flex; align-items: center; justify-content: center; z-index: 200; font-weight: 900; color: #00ff85; }
         .team-logo-img { width: 24px; height: 24px; object-fit: contain; }
+        .comp-btn { background: #18181b; border: 1px solid #27272a; border-radius: 20px; padding: 6px 14px; font-size: 10px; font-weight: 900; color: #71717a; transition: 0.3s; }
+        .comp-btn.active { background: #00ff85; color: #050505; border-color: #00ff85; }
     </style>
 </head>
 <body class="max-w-2xl mx-auto pb-20 border-x border-zinc-900 shadow-2xl">
@@ -36,9 +38,12 @@
     <header class="sticky top-0 bg-[#050505]/95 backdrop-blur-xl z-50 px-6 pt-8 border-b border-zinc-900">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-black italic tracking-tighter text-[#00ff85]">ACSF</h1>
-            <div class="relative w-48 md:w-64">
-                <input type="text" id="mainSearch" placeholder="Search Player or Team..." class="w-full bg-[#18181b] border border-zinc-800 rounded-lg px-4 py-2 text-xs outline-none focus:border-[#00ff85]" oninput="handleSearch()">
-                <div id="searchResults" class="search-results hidden"></div>
+            <div class="flex items-center gap-3">
+                <button id="compToggle" onclick="toggleCompMode()" class="comp-btn">VS COMPARE</button>
+                <div class="relative w-40 md:w-56">
+                    <input type="text" id="mainSearch" placeholder="Search..." class="w-full bg-[#18181b] border border-zinc-800 rounded-lg px-4 py-2 text-xs outline-none focus:border-[#00ff85]" oninput="handleSearch()">
+                    <div id="searchResults" class="search-results hidden"></div>
+                </div>
             </div>
         </div>
         <nav class="flex space-x-8">
@@ -46,6 +51,10 @@
             <button onclick="showTab('leaders')" id="btn-leaders" class="nav-btn">LEADERS</button>
         </nav>
     </header>
+
+    <div id="compStatusBar" class="hidden bg-[#00ff85] text-black text-[10px] font-black py-2 text-center sticky top-[108px] z-40">
+        SELECT TWO PLAYERS TO COMPARE
+    </div>
 
     <main class="px-4 mt-8">
         <div id="section-standings">
@@ -83,65 +92,31 @@
             "charlotte": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500045/assets/logos/mls-clubs/Club_Logo-Charlotte_p7sznf.png",
             "chicago": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500178/assets/logos/mls-clubs/Club_Logo-Chicago_jm2yev.png",
             "cincinnati": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500249/assets/logos/mls-clubs/Club_Logo-Cincinnati_jwgkps.png",
-            "cincy": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500249/assets/logos/mls-clubs/Club_Logo-Cincinnati_jwgkps.png",
             "colorado": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500322/assets/logos/mls-clubs/Club_Logo-Colorado_n5kpss.png",
             "columbus": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500414/assets/logos/mls-clubs/Club_Logo-Columbus_light_z3eq8l.png",
             "d.c.": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500504/assets/logos/mls-clubs/Club_Logo-D.C_t03ekm.png",
-            "dc united": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500504/assets/logos/mls-clubs/Club_Logo-D.C_t03ekm.png",
             "dallas": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500567/assets/logos/mls-clubs/Club_Logo-Dallas_sysmtj.png",
             "houston": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747500939/assets/logos/mls-clubs/Club_Logo-Houston_oifm77.png",
             "kansas city": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747754918/assets/logos/mls-clubs/Club_Logo-Kansas_City_cnhd75.png",
-            "sporting": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747754918/assets/logos/mls-clubs/Club_Logo-Kansas_City_cnhd75.png",
-            "galaxy": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747755165/assets/logos/mls-clubs/Club_Logo-LA_Galaxy_fg0wjp.png",
+            "la galaxy": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747755165/assets/logos/mls-clubs/Club_Logo-LA_Galaxy_fg0wjp.png",
             "lafc": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747755309/assets/logos/mls-clubs/Club_Logo-LAFC_djrhru.png",
             "miami": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747755405/assets/logos/mls-clubs/Club_Logo-Miami_tyqe64.png",
             "minnesota": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747754826/assets/logos/mls-clubs/Club_Logo-Minnesota_ftweor.png",
             "montreal": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747755806/assets/logos/mls-clubs/Club_Logo-Montreal_beeqnh.png",
             "nashville": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747755999/assets/logos/mls-clubs/Club_Logo-Nashville_rb9vwu.png",
             "new england": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1766020750/assets/NE_Logo_PRI_FC_RGB_480x480_fdx2us.png",
-            "england": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1766020750/assets/NE_Logo_PRI_FC_RGB_480x480_fdx2us.png",
             "red bulls": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747771783/assets/logos/mls-clubs/Club_Logo-RBNY_dwawvt.png",
-            "nyrb": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747771783/assets/logos/mls-clubs/Club_Logo-RBNY_dwawvt.png",
             "nycfc": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747756306/assets/logos/mls-clubs/Club_Logo-New_York_City_xu6vax.png",
-            "ny city": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747756306/assets/logos/mls-clubs/Club_Logo-New_York_City_xu6vax.png",
             "orlando": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747769281/assets/logos/mls-clubs/Club_Logo-Orlando_ryyn7a.png",
             "philadelphia": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747769446/assets/logos/mls-clubs/Club_Logo-Philadelphia_im7pqg.png",
-            "philly": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747769446/assets/logos/mls-clubs/Club_Logo-Philadelphia_im7pqg.png",
             "portland": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747769540/assets/logos/mls-clubs/Club_Logo-Portland_qihpaz.png",
             "salt lake": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747776403/assets/logos/mls-clubs/Club_Logo-Salt_Lake_City_hpvde5.png",
             "san diego": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1748261519/assets/logos/mls-clubs/Club_Logo-San_Diego_nwpyul.png",
-            "diego": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1748261519/assets/logos/mls-clubs/Club_Logo-San_Diego_nwpyul.png",
             "san jose": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1748262048/assets/logos/mls-clubs/Club_Logo-San_Jose_opzlmo.png",
             "seattle": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1748265125/assets/logos/mls-clubs/Club_Logo-Seattle_e6jk2x.png",
             "st louis": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747771858/assets/logos/mls-clubs/Club_Logo-Saint_Louis_guz12c.png",
-            "louis": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747771858/assets/logos/mls-clubs/Club_Logo-Saint_Louis_guz12c.png",
             "toronto": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1748265251/assets/logos/mls-clubs/Club_Logo-Toronto_vz6hao.png",
             "vancouver": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1748265547/assets/logos/mls-clubs/Club_Logo-Vancouver_ao9phl.png"
-        };
-
-        const TEAM_ALIASES = {
-            "atlanta": "Atlanta United",
-            "atlanta united": "Atlanta United",
-            "nyc": "NYCFC",
-            "ny city": "NYCFC",
-            "nycfc": "NYCFC",
-            "la galaxy": "LA Galaxy",
-            "galaxy": "LA Galaxy",
-            "lafc": "LAFC",
-            "los angeles": "LAFC",
-            "new england": "New England Revolution",
-            "england": "New England Revolution",
-            "st louis": "St. Louis City",
-            "st. louis": "St. Louis City",
-            "louis": "St. Louis City",
-            "cincy": "FC Cincinnati",
-            "cincinnati": "FC Cincinnati",
-            "philly": "Philadelphia Union",
-            "philadelphia": "Philadelphia Union",
-            "nyrb": "NY Red Bulls",
-            "red bulls": "NY Red Bulls",
-            "kansas city": "Sporting KC",
-            "sporting": "Sporting KC"
         };
 
         const URLS = {
@@ -153,32 +128,41 @@
             standings: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5yTQVQrEpc3LwF8vCZUu6rVk4vLFt97HjM5WYYQEy85b18G7XaV7m8FoNnd0VVg/pub?output=csv'
         };
 
+        let players = {}, standingsRaw = [], isCompMode = false, selectedPlayers = [];
+
         function normalizeTeam(name) {
             if (!name) return "Unknown";
-            const s = name.toLowerCase();
-            for (let key in TEAM_ALIASES) {
-                if (s.includes(key)) return TEAM_ALIASES[key];
-            }
-            return name;
+            let s = name.toLowerCase().trim()
+                .replace(/\./g, '')
+                .replace(/\s(fc|sc|united|city|cf|mls|city sc|city fc|united fc|football club)$/g, '')
+                .trim();
+            if (s.includes("red bull") || s.includes("nyrb") || s.includes("rbny")) return "Red Bulls";
+            if (s.includes("kansas") || s.includes("sporting")) return "Kansas City";
+            if (s.includes("lafc")) return "LAFC";
+            if (s.includes("galaxy")) return "LA Galaxy";
+            if (s.includes("atlanta")) return "Atlanta";
+            if (s.includes("new england")) return "New England";
+            if (s.includes("st louis")) return "St Louis";
+            if (s.includes("diego")) return "San Diego";
+            if (s.includes("jose")) return "San Jose";
+            if (s.includes("dc")) return "D.C.";
+            if (s.includes("miami")) return "Miami";
+            return s.charAt(0).toUpperCase() + s.slice(1);
         }
 
         function getLogo(name) {
-            const s = (name || "").toLowerCase();
-            // Exact match priority
-            if (LOGO_DB[s]) return LOGO_DB[s];
-            // Partial match fallback
-            for (let key in LOGO_DB) if (s.includes(key)) return LOGO_DB[key];
+            const normalized = normalizeTeam(name).toLowerCase();
+            for (let key in LOGO_DB) {
+                if (normalized.includes(key) || key.includes(normalized)) return LOGO_DB[key];
+            }
             return "https://via.placeholder.com/40?text=FC";
         }
-
-        let players = {}, standingsRaw = [];
 
         async function init() {
             const fetchCsv = (url) => new Promise(res => Papa.parse(url, { download: true, header: true, skipEmptyLines: true, complete: d => res(d.data) }));
             const [g, a, c, r, s, h] = await Promise.all([fetchCsv(URLS.goals), fetchCsv(URLS.assists), fetchCsv(URLS.cleans), fetchCsv(URLS.ratings), fetchCsv(URLS.standings), fetchCsv(URLS.history)]);
 
             standingsRaw = s;
-
             const getP = (name, rawTeam) => {
                 const n = (name || "").trim();
                 if(!n) return null;
@@ -209,15 +193,11 @@
         }
 
         function render() {
-            const EAST_LIST = ["Inter Miami CF", "Columbus Crew", "NYCFC", "FC Cincinnati", "Philadelphia Union", "Charlotte FC", "Orlando City SC", "Nashville SC", "New England Revolution", "Chicago Fire FC", "NY Red Bulls", "Toronto FC", "CF Montreal", "D.C. United", "Atlanta United"];
-            const WEST_LIST = ["Seattle Sounders FC", "San Diego FC", "Colorado Rapids", "Real Salt Lake", "Minnesota United FC", "San Jose Earthquakes", "LA Galaxy", "LAFC", "Portland Timbers", "Vancouver Whitecaps FC", "Houston Dynamo FC", "Austin FC", "FC Dallas", "Sporting KC", "St. Louis City"];
+            const EAST_LIST = ["Miami", "Columbus", "NYCFC", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "Red Bulls", "Toronto", "Montreal", "D.C.", "Atlanta"];
+            const WEST_LIST = ["Seattle", "San Diego", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "LAFC", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St Louis"];
 
             const drawTbl = (id, list) => {
-                const data = standingsRaw.filter(s => {
-                    const norm = normalizeTeam(s.Team);
-                    return list.some(l => l.includes(norm) || norm.includes(l));
-                }).sort((a,b) => b.PTS - a.PTS);
-
+                const data = standingsRaw.filter(s => list.includes(normalizeTeam(s.Team))).sort((a,b) => b.PTS - a.PTS);
                 document.getElementById(id).innerHTML = `<thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead><tbody>${data.map((r, i) => `
                     <tr class="clickable" onclick="openTeam('${normalizeTeam(r.Team)}')">
                         <td>${i+1}</td>
@@ -233,18 +213,86 @@
             const drawLeaders = (id, key) => {
                 const list = Object.values(players).sort((a,b) => b[key] - a[key]).slice(0, 15);
                 document.getElementById(id).innerHTML = list.map((p, i) => `
-                    <div class="p-4 flex justify-between items-center text-xs clickable hover:bg-zinc-800" onclick="openPlayer('${p.name}')">
+                    <div class="p-4 flex justify-between items-center text-xs clickable hover:bg-zinc-800" onclick="handlePlayerClick('${p.name}')">
                         <div class="flex items-center gap-3">
                             <span class="text-zinc-700 font-black">#${i+1}</span>
                             <div>
                                 <div class="font-bold">${p.name}</div>
-                                <div class="text-[9px] text-zinc-600 uppercase flex items-center gap-1"><img src="${getLogo(p.team)}" class="w-3 h-3 grayscale"> ${p.team}</div>
+                                <div class="text-[9px] text-zinc-600 uppercase flex items-center gap-1"><img src="${getLogo(p.team)}" class="w-3 h-3"> ${p.team}</div>
                             </div>
                         </div>
                         <span class="badge">${key === 'rating' ? p[key].toFixed(2) : p[key]}</span>
                     </div>`).join('');
             };
             drawLeaders('list-goals', 'goals'); drawLeaders('list-assists', 'assists'); drawLeaders('list-ratings', 'rating'); drawLeaders('list-cleans', 'cleans');
+        }
+
+        function toggleCompMode() {
+            isCompMode = !isCompMode;
+            selectedPlayers = [];
+            document.getElementById('compToggle').classList.toggle('active', isCompMode);
+            document.getElementById('compStatusBar').classList.toggle('hidden', !isCompMode);
+        }
+
+        function handlePlayerClick(name) {
+            if (!isCompMode) return openPlayer(name);
+            if (selectedPlayers.includes(name)) return;
+            selectedPlayers.push(name);
+            if (selectedPlayers.length === 2) {
+                openComparison(selectedPlayers[0], selectedPlayers[1]);
+                isCompMode = false;
+                document.getElementById('compToggle').classList.remove('active');
+                document.getElementById('compStatusBar').classList.add('hidden');
+                selectedPlayers = [];
+            }
+        }
+
+        function openComparison(n1, n2) {
+            const p1 = players[n1], p2 = players[n2];
+            document.getElementById('mainModal').style.display = 'block';
+            
+            const highlight = (v1, v2) => v1 > v2 ? 'text-[#00ff85] font-black' : (v2 > v1 ? 'text-zinc-600' : 'text-white');
+
+            document.getElementById('modalContent').innerHTML = `
+                <div class="grid grid-cols-2 gap-8 text-center mb-10">
+                    <div>
+                        <img src="${getLogo(p1.team)}" class="w-12 h-12 mx-auto mb-2">
+                        <h4 class="text-lg font-black italic uppercase leading-tight">${p1.name}</h4>
+                        <p class="text-[9px] text-zinc-500 uppercase font-black">${p1.team}</p>
+                    </div>
+                    <div>
+                        <img src="${getLogo(p2.team)}" class="w-12 h-12 mx-auto mb-2">
+                        <h4 class="text-lg font-black italic uppercase leading-tight">${p2.name}</h4>
+                        <p class="text-[9px] text-zinc-500 uppercase font-black">${p2.team}</p>
+                    </div>
+                </div>
+
+                <div class="card divide-y divide-zinc-800">
+                    ${[
+                        ['Rating', p1.rating.toFixed(2), p2.rating.toFixed(2)],
+                        ['Played', p1.played, p2.played],
+                        ['Goals', p1.goals, p2.goals],
+                        ['Assists', p1.assists, p2.assists],
+                        ['Cleans', p1.cleans, p2.cleans]
+                    ].map(row => `
+                        <div class="grid grid-cols-3 p-4 items-center text-xs">
+                            <div class="${highlight(parseFloat(row[1]), parseFloat(row[2]))} text-left text-sm">${row[1]}</div>
+                            <div class="text-[9px] text-zinc-600 uppercase font-black text-center">${row[0]}</div>
+                            <div class="${highlight(parseFloat(row[2]), parseFloat(row[1]))} text-right text-sm">${row[2]}</div>
+                        </div>`).join('')}
+                </div>
+
+                <div class="mt-8">
+                    <h3 class="text-[9px] font-black text-zinc-500 uppercase mb-4 text-center">Recent Form Matchup</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1 items-center">
+                            ${p1.history.slice(0,5).map(r => `<div class="rating-box ${r >= 7.5 ? 'rating-high' : (r >= 6.5 ? 'rating-mid' : 'rating-low')} w-full">${r.toFixed(1)}</div>`).join('')}
+                        </div>
+                        <div class="flex flex-col gap-1 items-center">
+                            ${p2.history.slice(0,5).map(r => `<div class="rating-box ${r >= 7.5 ? 'rating-high' : (r >= 6.5 ? 'rating-mid' : 'rating-low')} w-full">${r.toFixed(1)}</div>`).join('')}
+                        </div>
+                    </div>
+                </div>`;
         }
 
         function openPlayer(name) {
@@ -264,19 +312,20 @@
                     <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 font-black mb-1 uppercase">Assists</div><div class="text-3xl font-black">${p.assists}</div></div>
                 </div>
                 <div class="mt-8">
-                    <div class="flex justify-between items-end mb-4"><h3 class="text-[10px] font-black text-zinc-500 uppercase">Match History</h3><span class="text-[9px] text-zinc-700 font-bold uppercase">← Latest First</span></div>
-                    <div class="flex gap-2 flex-wrap">${p.history.length ? p.history.map(r => `<div class="rating-box ${r >= 7.5 ? 'rating-high' : (r >= 6.5 ? 'rating-mid' : 'rating-low')}">${r.toFixed(1)}</div>`).join('') : '<div class="text-zinc-700 text-[10px] font-bold">NO MATCH DATA RECORDED</div>'}</div>
+                    <div class="flex justify-between items-end mb-4"><h3 class="text-[10px] font-black text-zinc-500 uppercase">Match History</h3><span class="text-[9px] text-zinc-700 font-bold uppercase">← Latest</span></div>
+                    <div class="flex gap-2 flex-wrap">${p.history.length ? p.history.map(r => `<div class="rating-box ${r >= 7.5 ? 'rating-high' : (r >= 6.5 ? 'rating-mid' : 'rating-low')}">${r.toFixed(1)}</div>`).join('') : '<div class="text-zinc-700 text-[10px] font-bold">NO DATA</div>'}</div>
                 </div>`;
         }
 
         function openTeam(name) {
-            const roster = Object.values(players).filter(p => normalizeTeam(p.team) === normalizeTeam(name));
+            const normName = normalizeTeam(name);
+            const roster = Object.values(players).filter(p => p.team === normName);
             document.getElementById('mainModal').style.display = 'block';
             document.getElementById('modalContent').innerHTML = `
-                <div class="flex items-center gap-4 mb-8"><img src="${getLogo(name)}" class="w-16 h-16 object-contain"><h1 class="text-4xl font-black italic text-[#00ff85] uppercase">${normalizeTeam(name)}</h1></div>
+                <div class="flex items-center gap-4 mb-8"><img src="${getLogo(name)}" class="w-16 h-16 object-contain"><h1 class="text-4xl font-black italic text-[#00ff85] uppercase">${normName}</h1></div>
                 <div class="card divide-y divide-zinc-800">
                     <div class="p-3 grid grid-cols-4 text-[9px] font-black text-zinc-600 uppercase"><div>Player</div><div>G</div><div>A</div><div>RTG</div></div>
-                    ${roster.sort((a,b) => b.rating - a.rating).map(p => `<div onclick="openPlayer('${p.name}')" class="p-4 grid grid-cols-4 items-center text-xs hover:bg-zinc-800 cursor-pointer"><div class="font-bold truncate">${p.name}</div><div>${p.goals}</div><div>${p.assists}</div><div class="text-[#00ff85] font-black">${p.rating.toFixed(2)}</div></div>`).join('')}
+                    ${roster.sort((a,b) => b.rating - a.rating).map(p => `<div onclick="handlePlayerClick('${p.name}')" class="p-4 grid grid-cols-4 items-center text-xs hover:bg-zinc-800 cursor-pointer"><div class="font-bold truncate">${p.name}</div><div>${p.goals}</div><div>${p.assists}</div><div class="text-[#00ff85] font-black">${p.rating.toFixed(2)}</div></div>`).join('')}
                 </div>`;
         }
 
@@ -289,7 +338,7 @@
             res.classList.remove('hidden');
             res.innerHTML = `
                 ${tMatch.map(t => `<div onclick="openTeam('${normalizeTeam(t.Team)}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-[10px] font-black text-[#00ff85] uppercase flex items-center gap-2"><img src="${getLogo(t.Team)}" class="w-4 h-4"> ${normalizeTeam(t.Team)}</div>`).join('')}
-                ${pMatch.map(p => `<div onclick="openPlayer('${p.name}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-xs font-bold border-t border-zinc-900 flex items-center gap-2"><img src="${getLogo(p.team)}" class="w-4 h-4 grayscale"> ${p.name}</div>`).join('')}`;
+                ${pMatch.map(p => `<div onclick="handlePlayerClick('${p.name}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-xs font-bold border-t border-zinc-900 flex items-center gap-2"><img src="${getLogo(p.team)}" class="w-4 h-4"> ${p.name}</div>`).join('')}`;
         }
 
         function showTab(t) {
