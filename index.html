@@ -86,7 +86,6 @@
     </div>
 
     <script>
-        // LOGO DATABASE
         const LOGO_DB = {
             "atlanta": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747499879/assets/logos/mls-clubs/Club_Logo-Atlanta_jtk7ku.png",
             "austin": "https://images.mlssoccer.com/image/upload/t_club_logo_medium/v1747499975/assets/logos/mls-clubs/Club_Logo-Austin_pa9xtu.png",
@@ -129,15 +128,18 @@
             standings: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS5yTQVQrEpc3LwF8vCZUu6rVk4vLFt97HjM5WYYQEy85b18G7XaV7m8FoNnd0VVg/pub?output=csv'
         };
 
-        let players = {}, standingsRaw = [], isCompMode = false, selectedPlayers = [];
+        let players = {}, standingsRaw = [];
 
-        // HEAVY DUTY NORMALIZATION
         function normalizeTeam(name) {
             if (!name) return "Unknown";
             let s = name.toLowerCase().trim();
             
-            if (s.includes("nycfc") || s.includes("new york city")) return "Nycfc";
-            if (s.includes("lafc") || s.includes("los angeles fc")) return "LAFC";
+            // PRIORITY MAPPING FOR YOUR SHEET
+            if (s === "los angeles") return "LAFC";
+            if (s === "ny city" || s === "nycfc" || s.includes("new york city")) return "Nycfc";
+            
+            if (s.includes("lafc")) return "LAFC";
+            if (s.includes("galaxy")) return "LA Galaxy";
             if (s.includes("cincinnati")) return "Cincinnati";
             if (s.includes("montreal")) return "Montreal";
             if (s.includes("minnesota")) return "Minnesota";
@@ -154,7 +156,6 @@
             if (s.includes("jose") || s.includes("earthquakes") || s === "sj") return "San Jose";
             if (s.includes("red bull") || s.includes("nyrb") || s.includes("rbny")) return "Red Bulls";
             if (s.includes("kansas") || s.includes("sporting")) return "Kansas City";
-            if (s.includes("galaxy")) return "LA Galaxy";
             if (s.includes("new england") || s.includes("revolution")) return "New England";
             if (s.includes("st louis") || s.includes("st. louis")) return "St Louis";
             if (s.includes("diego")) return "San Diego";
@@ -169,7 +170,7 @@
         function getLogo(name) {
             const normalized = normalizeTeam(name).toLowerCase();
             for (let key in LOGO_DB) {
-                if (normalized.includes(key) || key.includes(normalized)) return LOGO_DB[key];
+                if (normalized.includes(key)) return LOGO_DB[key];
             }
             return "https://via.placeholder.com/40?text=FC";
         }
@@ -197,8 +198,7 @@
                 if(n && players[n]) {
                     let vals = Object.entries(row)
                         .filter(([k, v]) => !['Player Name', 'Team', 'Average', 'Total', 'GP', 'MP', 'Pos'].includes(k))
-                        .map(([k, v]) => parseFloat(v))
-                        .filter(v => !isNaN(v) && v > 0);
+                        .map(([k, v]) => parseFloat(v)).filter(v => !isNaN(v) && v > 0);
                     players[n].history.push(...vals);
                 }
             });
@@ -209,40 +209,23 @@
         }
 
         function render() {
-            // FIXED 15-TEAM CONFERENCES
             const EAST_LIST = ["Miami", "Columbus", "Nycfc", "Cincinnati", "Philadelphia", "Charlotte", "Orlando", "Nashville", "New England", "Chicago", "Red Bulls", "Toronto", "Montreal", "D.C.", "Atlanta"];
             const WEST_LIST = ["Seattle", "San Diego", "Colorado", "Salt Lake", "Minnesota", "San Jose", "LA Galaxy", "LAFC", "Portland", "Vancouver", "Houston", "Austin", "Dallas", "Kansas City", "St Louis"];
 
             const drawTbl = (id, list) => {
-                const finalData = [];
-                
-                // For every team we expect to see...
-                list.forEach(targetTeam => {
-                    // Find it in the raw data by comparing normalized names
+                const finalData = list.map(targetTeam => {
                     const match = standingsRaw.find(row => normalizeTeam(row.Team) === targetTeam);
-                    
-                    if (match) {
-                        finalData.push({
-                            Team: targetTeam,
-                            GD: match.GD || 0,
-                            PTS: match.PTS || 0
-                        });
-                    } else {
-                        // If not found in sheet, show 0 pts so the team doesn't disappear
-                        finalData.push({ Team: targetTeam, GD: 0, PTS: 0 });
-                    }
-                });
-
-                // Sort by points
-                finalData.sort((a,b) => b.PTS - a.PTS);
+                    return {
+                        Team: targetTeam,
+                        GD: match ? (parseInt(match.GD) || 0) : 0,
+                        PTS: match ? (parseInt(match.PTS) || 0) : 0
+                    };
+                }).sort((a,b) => b.PTS - a.PTS);
 
                 document.getElementById(id).innerHTML = `<thead><tr><th>#</th><th>Team</th><th>GD</th><th>PTS</th></tr></thead><tbody>${finalData.map((r, i) => `
                     <tr class="clickable" onclick="openTeam('${r.Team}')">
                         <td>${i+1}</td>
-                        <td class="font-bold flex items-center gap-2">
-                            <img src="${getLogo(r.Team)}" class="team-logo-img">
-                            ${r.Team}
-                        </td>
+                        <td class="font-bold flex items-center gap-2"><img src="${getLogo(r.Team)}" class="team-logo-img">${r.Team}</td>
                         <td>${r.GD}</td>
                         <td class="text-[#00ff85] font-black">${r.PTS}</td>
                     </tr>`).join('')}</tbody>`;
@@ -251,107 +234,44 @@
             drawTbl('table-eastern', EAST_LIST);
             drawTbl('table-western', WEST_LIST);
 
-            // LEADERS
             const drawLeaders = (id, key) => {
                 const list = Object.values(players).sort((a,b) => b[key] - a[key]).slice(0, 15);
                 document.getElementById(id).innerHTML = list.map((p, i) => `
-                    <div class="p-4 flex justify-between items-center text-xs clickable hover:bg-zinc-800" onclick="handlePlayerClick('${p.name}')">
-                        <div class="flex items-center gap-3">
-                            <span class="text-zinc-700 font-black">#${i+1}</span>
-                            <div>
-                                <div class="font-bold">${p.name}</div>
-                                <div class="text-[9px] text-zinc-600 uppercase flex items-center gap-1"><img src="${getLogo(p.team)}" class="w-3 h-3"> ${p.team}</div>
-                            </div>
-                        </div>
-                        <span class="badge">${key === 'rating' ? p[key].toFixed(2) : p[key]}</span>
+                    <div class="p-4 flex justify-between items-center text-xs clickable hover:bg-zinc-800" onclick="openPlayer('${p.name}')">
+                        <div class="flex items-center gap-3"><span class="text-zinc-700 font-black">#${i+1}</span>
+                            <div><div class="font-bold">${p.name}</div><div class="text-[9px] text-zinc-600 uppercase flex items-center gap-1"><img src="${getLogo(p.team)}" class="w-3 h-3">${p.team}</div></div>
+                        </div><span class="badge">${key === 'rating' ? p[key].toFixed(2) : p[key]}</span>
                     </div>`).join('');
             };
-            drawLeaders('list-goals', 'goals'); 
-            drawLeaders('list-assists', 'assists'); 
-            drawLeaders('list-ratings', 'rating'); 
-            drawLeaders('list-cleans', 'cleans');
-        }
-
-        // UTILITY FUNCTIONS
-        function toggleCompMode() {
-            isCompMode = !isCompMode;
-            selectedPlayers = [];
-            document.getElementById('compToggle').classList.toggle('active', isCompMode);
-            document.getElementById('compStatusBar').classList.toggle('hidden', !isCompMode);
-        }
-
-        function handlePlayerClick(name) {
-            if (!isCompMode) return openPlayer(name);
-            if (selectedPlayers.includes(name)) return;
-            selectedPlayers.push(name);
-            if (selectedPlayers.length === 2) {
-                openComparison(selectedPlayers[0], selectedPlayers[1]);
-                isCompMode = false;
-                document.getElementById('compToggle').classList.remove('active');
-                document.getElementById('compStatusBar').classList.add('hidden');
-                selectedPlayers = [];
-            }
-        }
-
-        function openComparison(n1, n2) {
-            const p1 = players[n1], p2 = players[n2];
-            document.getElementById('mainModal').style.display = 'block';
-            const highlight = (v1, v2) => v1 > v2 ? 'text-[#00ff85] font-black' : (v2 > v1 ? 'text-zinc-600' : 'text-white');
-
-            document.getElementById('modalContent').innerHTML = `
-                <div class="grid grid-cols-2 gap-8 text-center mb-10">
-                    <div>
-                        <img src="${getLogo(p1.team)}" class="w-12 h-12 mx-auto mb-2">
-                        <h4 class="text-lg font-black italic uppercase leading-tight">${p1.name}</h4>
-                        <p class="text-[9px] text-zinc-500 uppercase font-black">${p1.team}</p>
-                    </div>
-                    <div>
-                        <img src="${getLogo(p2.team)}" class="w-12 h-12 mx-auto mb-2">
-                        <h4 class="text-lg font-black italic uppercase leading-tight">${p2.name}</h4>
-                        <p class="text-[9px] text-zinc-500 uppercase font-black">${p2.team}</p>
-                    </div>
-                </div>
-                <div class="card divide-y divide-zinc-800">
-                    ${[['Rating', p1.rating.toFixed(2), p2.rating.toFixed(2)],['Played', p1.played, p2.played],['Goals', p1.goals, p2.goals],['Assists', p1.assists, p2.assists],['Cleans', p1.cleans, p2.cleans]].map(row => `
-                        <div class="grid grid-cols-3 p-4 items-center text-xs">
-                            <div class="${highlight(parseFloat(row[1]), parseFloat(row[2]))} text-left text-sm">${row[1]}</div>
-                            <div class="text-[9px] text-zinc-600 uppercase font-black text-center">${row[0]}</div>
-                            <div class="${highlight(parseFloat(row[2]), parseFloat(row[1]))} text-right text-sm">${row[2]}</div>
-                        </div>`).join('')}
-                </div>`;
+            drawLeaders('list-goals', 'goals'); drawLeaders('list-assists', 'assists'); drawLeaders('list-ratings', 'rating'); drawLeaders('list-cleans', 'cleans');
         }
 
         function openPlayer(name) {
             const p = players[name];
             document.getElementById('mainModal').style.display = 'block';
-            document.getElementById('searchResults').classList.add('hidden');
             document.getElementById('modalContent').innerHTML = `
                 <div class="text-center mb-8 relative">
-                    <img src="${getLogo(p.team)}" class="absolute inset-0 m-auto w-32 h-32 opacity-10 grayscale pointer-events-none">
+                    <img src="${getLogo(p.team)}" class="absolute inset-0 m-auto w-32 h-32 opacity-10 grayscale">
                     <h2 class="text-4xl font-black italic text-white relative z-10">${p.name}</h2>
                     <p class="text-[#00ff85] font-black text-xs tracking-widest relative z-10 uppercase">${p.team}</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 font-black mb-1 uppercase">Avg Rating</div><div class="text-3xl font-black text-[#00ff85]">${p.rating.toFixed(2)}</div></div>
                     <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 font-black mb-1 uppercase">GP</div><div class="text-3xl font-black">${p.played}</div></div>
-                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 font-black mb-1 uppercase">Goals</div><div class="text-3xl font-black">${p.goals}</div></div>
-                    <div class="card p-5 text-center"><div class="text-[9px] text-zinc-500 font-black mb-1 uppercase">Assists</div><div class="text-3xl font-black">${p.assists}</div></div>
                 </div>
                 <div class="mt-8">
-                    <div class="flex justify-between items-end mb-4"><h3 class="text-[10px] font-black text-zinc-500 uppercase">Match History</h3><span class="text-[9px] text-zinc-700 font-bold uppercase">← Latest</span></div>
-                    <div class="flex gap-2 flex-wrap">${p.history.length ? p.history.map(r => `<div class="rating-box ${r >= 7.5 ? 'rating-high' : (r >= 6.5 ? 'rating-mid' : 'rating-low')}">${r.toFixed(1)}</div>`).join('') : '<div class="text-zinc-700 text-[10px] font-bold">NO DATA</div>'}</div>
+                    <div class="flex justify-between items-end mb-4"><h3 class="text-[10px] font-black text-zinc-500 uppercase">Match History</h3></div>
+                    <div class="flex gap-2 flex-wrap">${p.history.map(r => `<div class="rating-box ${r >= 7.5 ? 'rating-high' : (r >= 6.5 ? 'rating-mid' : 'rating-low')}">${r.toFixed(1)}</div>`).join('')}</div>
                 </div>`;
         }
 
         function openTeam(name) {
-            const normName = normalizeTeam(name);
-            const roster = Object.values(players).filter(p => p.team === normName);
+            const roster = Object.values(players).filter(p => p.team === name);
             document.getElementById('mainModal').style.display = 'block';
             document.getElementById('modalContent').innerHTML = `
-                <div class="flex items-center gap-4 mb-8"><img src="${getLogo(name)}" class="w-16 h-16 object-contain"><h1 class="text-4xl font-black italic text-[#00ff85] uppercase">${normName}</h1></div>
+                <div class="flex items-center gap-4 mb-8"><img src="${getLogo(name)}" class="w-16 h-16"><h1 class="text-4xl font-black italic text-[#00ff85] uppercase">${name}</h1></div>
                 <div class="card divide-y divide-zinc-800">
-                    <div class="p-3 grid grid-cols-4 text-[9px] font-black text-zinc-600 uppercase"><div>Player</div><div>G</div><div>A</div><div>RTG</div></div>
-                    ${roster.sort((a,b) => b.rating - a.rating).map(p => `<div onclick="handlePlayerClick('${p.name}')" class="p-4 grid grid-cols-4 items-center text-xs hover:bg-zinc-800 cursor-pointer"><div class="font-bold truncate">${p.name}</div><div>${p.goals}</div><div>${p.assists}</div><div class="text-[#00ff85] font-black">${p.rating.toFixed(2)}</div></div>`).join('')}
+                    ${roster.sort((a,b) => b.rating - a.rating).map(p => `<div onclick="openPlayer('${p.name}')" class="p-4 grid grid-cols-4 items-center text-xs hover:bg-zinc-800 cursor-pointer"><div class="font-bold col-span-2">${p.name}</div><div>G: ${p.goals}</div><div class="text-[#00ff85] font-black text-right">${p.rating.toFixed(2)}</div></div>`).join('')}
                 </div>`;
         }
 
@@ -360,11 +280,8 @@
             const res = document.getElementById('searchResults');
             if (q.length < 2) { res.classList.add('hidden'); return; }
             const pMatch = Object.values(players).filter(p => p.name.toLowerCase().includes(q)).slice(0, 5);
-            const tMatch = standingsRaw.filter(s => s.Team && s.Team.toLowerCase().includes(q)).slice(0, 3);
             res.classList.remove('hidden');
-            res.innerHTML = `
-                ${tMatch.map(t => `<div onclick="openTeam('${normalizeTeam(t.Team)}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-[10px] font-black text-[#00ff85] uppercase flex items-center gap-2"><img src="${getLogo(t.Team)}" class="w-4 h-4"> ${normalizeTeam(t.Team)}</div>`).join('')}
-                ${pMatch.map(p => `<div onclick="handlePlayerClick('${p.name}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-xs font-bold border-t border-zinc-900 flex items-center gap-2"><img src="${getLogo(p.team)}" class="w-4 h-4"> ${p.name}</div>`).join('')}`;
+            res.innerHTML = pMatch.map(p => `<div onclick="openPlayer('${p.name}')" class="p-3 hover:bg-zinc-800 cursor-pointer text-xs font-bold border-t border-zinc-900 flex items-center gap-2"><img src="${getLogo(p.team)}" class="w-4 h-4"> ${p.name}</div>`).join('');
         }
 
         function showTab(t) {
